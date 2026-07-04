@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -31,10 +33,19 @@ import com.dotkios.ulaaa.ui.components.TripCard
 
 @Composable
 fun HomeScreen(
+    onSeeAllTrips: () -> Unit,
+    onCreateTrip: () -> Unit,
+    onOpenMap: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    HomeContent(state = state, onQueryChange = viewModel::onQueryChange)
+    HomeContent(
+        state = state,
+        onQueryChange = viewModel::onQueryChange,
+        onSeeAllTrips = onSeeAllTrips,
+        onCreateTrip = onCreateTrip,
+        onOpenMap = onOpenMap,
+    )
 }
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -42,6 +53,9 @@ fun HomeScreen(
 private fun HomeContent(
     state: HomeUiState,
     onQueryChange: (String) -> Unit,
+    onSeeAllTrips: () -> Unit,
+    onCreateTrip: () -> Unit,
+    onOpenMap: () -> Unit,
 ) {
     if (state.isLoading) {
         Column(
@@ -66,13 +80,21 @@ private fun HomeContent(
         }
 
         item {
-            Section(title = "Upcoming Trips", actionLabel = "See all") {
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = 20.dp),
-                    horizontalArrangement = Arrangement.spacedBy(14.dp),
-                ) {
-                    items(state.trips, key = { it.id }) { trip ->
-                        TripCard(trip = trip, onClick = {})
+            Section(
+                title = "Upcoming Trips",
+                actionLabel = if (state.trips.isEmpty()) null else "See all",
+                onAction = onSeeAllTrips,
+            ) {
+                if (state.trips.isEmpty()) {
+                    CreateTripPrompt(onCreateTrip = onCreateTrip)
+                } else {
+                    LazyRow(
+                        contentPadding = PaddingValues(horizontal = 20.dp),
+                        horizontalArrangement = Arrangement.spacedBy(14.dp),
+                    ) {
+                        items(state.trips, key = { it.id }) { trip ->
+                            TripCard(trip = trip, onClick = { onSeeAllTrips() })
+                        }
                     }
                 }
             }
@@ -92,13 +114,13 @@ private fun HomeContent(
         }
 
         item {
-            Section(title = "Nearby Landmarks", actionLabel = "Map") {
+            Section(title = "Nearby Landmarks", actionLabel = "Map", onAction = onOpenMap) {
                 LazyRow(
                     contentPadding = PaddingValues(horizontal = 20.dp),
                     horizontalArrangement = Arrangement.spacedBy(14.dp),
                 ) {
                     items(state.nearbyLandmarks, key = { it.id }) { landmark ->
-                        LandmarkCard(landmark = landmark, onClick = {})
+                        LandmarkCard(landmark = landmark, onClick = { onOpenMap() })
                     }
                 }
             }
@@ -118,6 +140,32 @@ private fun HomeContent(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun CreateTripPrompt(onCreateTrip: () -> Unit) {
+    Card(
+        onClick = onCreateTrip,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp),
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Text(
+                text = "Plan your first trip",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+            )
+            Text(
+                text = "Tap to create a trip and invite your Squad.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+            )
         }
     }
 }
@@ -143,13 +191,14 @@ private fun Greeting(name: String) {
 private fun Section(
     title: String,
     actionLabel: String? = null,
+    onAction: (() -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         SectionTitle(
             title = title,
             actionLabel = actionLabel,
-            onActionClick = if (actionLabel != null) ({}) else null,
+            onActionClick = if (actionLabel != null) (onAction ?: {}) else null,
         )
         content()
     }

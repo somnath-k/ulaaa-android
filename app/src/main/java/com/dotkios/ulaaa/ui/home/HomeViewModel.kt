@@ -6,59 +6,55 @@ import androidx.lifecycle.viewModelScope
 import com.dotkios.ulaaa.data.model.Category
 import com.dotkios.ulaaa.data.model.CuratedItinerary
 import com.dotkios.ulaaa.data.model.Landmark
-import com.dotkios.ulaaa.data.model.Trip
+import com.dotkios.ulaaa.data.repository.AuthRepository
+import com.dotkios.ulaaa.data.repository.TripRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
 @HiltViewModel
-class HomeViewModel @Inject constructor() : ViewModel() {
+class HomeViewModel @Inject constructor(
+    tripRepository: TripRepository,
+    authRepository: AuthRepository,
+) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(HomeUiState())
-    val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+    private val query = MutableStateFlow("")
 
-    init {
-        loadHome()
-    }
+    private val userName: String =
+        authRepository.currentUser?.displayName?.takeIf { it.isNotBlank() } ?: "Explorer"
+
+    val uiState: StateFlow<HomeUiState> =
+        combine(query, tripRepository.trips) { q, trips ->
+            HomeUiState(
+                isLoading = false,
+                userName = userName,
+                query = q,
+                trips = trips,
+                curated = MockData.curated,
+                nearbyLandmarks = MockData.landmarks,
+                categories = MockData.categories,
+            )
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = HomeUiState(isLoading = true, userName = userName),
+        )
 
     fun onQueryChange(value: String) {
-        _uiState.update { it.copy(query = value) }
-    }
-
-    private fun loadHome() {
-        viewModelScope.launch {
-            // Simulates a repository fetch. Swap for real Repository call in Sprint 3+.
-            delay(600)
-            _uiState.update {
-                it.copy(
-                    isLoading = false,
-                    userName = "Sachin",
-                    trips = MockData.trips,
-                    curated = MockData.curated,
-                    nearbyLandmarks = MockData.landmarks,
-                    categories = MockData.categories,
-                )
-            }
-        }
+        query.value = value
     }
 }
 
-/** Temporary in-memory content until real APIs (Ola Maps, Geoapify) are wired in. */
+/** Curated/landmark/category rails stay mocked until their APIs are wired (Gemini, Geoapify feed). */
 private object MockData {
     private val teal = Color(0xFF0E7C7B)
     private val coral = Color(0xFFFF6B57)
     private val sand = Color(0xFFF4A259)
     private val indigo = Color(0xFF5A6FEA)
-
-    val trips = listOf(
-        Trip("t1", "Backwaters & Beaches", "Kerala, India", "Aug 12 – 18", 4, teal),
-        Trip("t2", "Himalayan Escape", "Manali, India", "Sep 3 – 9", 3, indigo),
-    )
 
     val curated = listOf(
         CuratedItinerary("c1", "48h in Pondicherry", "French quarter + cafés", 6, coral),
