@@ -42,7 +42,7 @@ class ChatViewModel @Inject constructor(
 
         viewModelScope.launch {
             val reply = chatRepository.ask(history, question)
-                .getOrElse { "Sorry, I couldn't reach the network. Try again." }
+                .getOrElse { e -> "Dot hit a snag: ${e.message ?: "unknown error"}. Try again." }
             _uiState.update {
                 it.copy(
                     messages = it.messages + ChatMessage(ChatRole.ASSISTANT, reply),
