@@ -44,9 +44,9 @@ import com.dotkios.ulaaa.ui.components.AvatarGroup
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TripsScreen(
-    onBack: () -> Unit,
     onCreateTrip: () -> Unit,
     onOpenTrip: (String) -> Unit,
+    onBack: (() -> Unit)? = null,
     viewModel: TripsViewModel = hiltViewModel(),
 ) {
     val trips by viewModel.trips.collectAsStateWithLifecycle()
@@ -56,8 +56,10 @@ fun TripsScreen(
             TopAppBar(
                 title = { Text("Your Trips") },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    if (onBack != null) {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        }
                     }
                 },
             )

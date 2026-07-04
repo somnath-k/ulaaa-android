@@ -3,10 +3,12 @@ package com.dotkios.ulaaa.ui.navigation
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Luggage
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.Bookmark
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Luggage
 import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -24,6 +26,12 @@ enum class TopLevelDestination(
         selectedIcon = Icons.Filled.Home,
         unselectedIcon = Icons.Outlined.Home,
     ),
+    TRIPS(
+        route = "trips",
+        label = "Trips",
+        selectedIcon = Icons.Filled.Luggage,
+        unselectedIcon = Icons.Outlined.Luggage,
+    ),
     MAP(
         route = "map",
         label = "Map",
@@ -32,7 +40,7 @@ enum class TopLevelDestination(
     ),
     BUCKET_LIST(
         route = "bucketlist",
-        label = "Bucket List",
+        label = "Saved",
         selectedIcon = Icons.Filled.Bookmark,
         unselectedIcon = Icons.Outlined.Bookmark,
     ),

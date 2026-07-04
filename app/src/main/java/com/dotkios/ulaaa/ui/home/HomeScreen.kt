@@ -1,14 +1,18 @@
 package com.dotkios.ulaaa.ui.home
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -26,6 +30,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -35,6 +42,9 @@ import com.dotkios.ulaaa.ui.components.CuratedCard
 import com.dotkios.ulaaa.ui.components.LandmarkCard
 import com.dotkios.ulaaa.ui.components.SectionTitle
 import com.dotkios.ulaaa.ui.components.TripCard
+
+private val HeaderTop = Color(0xFF0E7C7B)
+private val HeaderBottom = Color(0xFF0A5A59)
 
 @Composable
 fun HomeScreen(
@@ -76,14 +86,10 @@ private fun HomeContent(
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(top = 16.dp, bottom = 24.dp),
+        contentPadding = PaddingValues(bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
-        item { Greeting(name = state.userName) }
-
-        item {
-            AiSearchEntry(onClick = onOpenChat)
-        }
+        item { HomeHeader(name = state.userName, onOpenChat = onOpenChat) }
 
         item {
             Section(
@@ -107,19 +113,6 @@ private fun HomeContent(
         }
 
         item {
-            Section(title = "Curated For You", actionLabel = "See all") {
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = 20.dp),
-                    horizontalArrangement = Arrangement.spacedBy(14.dp),
-                ) {
-                    items(state.curated, key = { it.id }) { curated ->
-                        CuratedCard(itinerary = curated, onClick = {})
-                    }
-                }
-            }
-        }
-
-        item {
             Section(title = "Nearby Landmarks", actionLabel = "Map", onAction = onOpenMap) {
                 LazyRow(
                     contentPadding = PaddingValues(horizontal = 20.dp),
@@ -127,6 +120,19 @@ private fun HomeContent(
                 ) {
                     items(state.nearbyLandmarks, key = { it.id }) { landmark ->
                         LandmarkCard(landmark = landmark, onClick = { onOpenMap() })
+                    }
+                }
+            }
+        }
+
+        item {
+            Section(title = "Curated For You", actionLabel = "See all") {
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 20.dp),
+                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                ) {
+                    items(state.curated, key = { it.id }) { curated ->
+                        CuratedCard(itinerary = curated, onClick = {})
                     }
                 }
             }
@@ -151,15 +157,39 @@ private fun HomeContent(
 }
 
 @Composable
-private fun AiSearchEntry(onClick: () -> Unit) {
-    Surface(
-        onClick = onClick,
+private fun HomeHeader(name: String, onOpenChat: () -> Unit) {
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp),
+            .clip(RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp))
+            .background(Brush.verticalGradient(listOf(HeaderTop, HeaderBottom)))
+            .windowInsetsPadding(WindowInsets.statusBars)
+            .padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 22.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Text(
+            text = "Hello, $name 👋",
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            color = Color.White,
+        )
+        Text(
+            text = "Where to next?",
+            style = MaterialTheme.typography.bodyLarge,
+            color = Color.White.copy(alpha = 0.85f),
+        )
+        AiSearchPill(onClick = onOpenChat, modifier = Modifier.padding(top = 14.dp))
+    }
+}
+
+@Composable
+private fun AiSearchPill(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Surface(
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant,
-        tonalElevation = 1.dp,
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 2.dp,
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
@@ -203,23 +233,6 @@ private fun CreateTripPrompt(onCreateTrip: () -> Unit) {
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
             )
         }
-    }
-}
-
-@Composable
-private fun Greeting(name: String) {
-    Column(modifier = Modifier.padding(horizontal = 20.dp)) {
-        Text(
-            text = "Hello, $name 👋",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground,
-        )
-        Text(
-            text = "Where to next?",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
     }
 }
 

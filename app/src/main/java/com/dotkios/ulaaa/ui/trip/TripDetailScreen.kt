@@ -98,19 +98,19 @@ fun TripDetailScreen(
                 )
             }
 
-            MembersSection(
-                members = state.members,
-                addableFriends = state.addableFriends,
-                onAdd = viewModel::addMember,
-                onRemove = viewModel::deleteMember,
-            )
-
             ItinerarySection(
                 stops = state.itinerary,
                 isGenerating = state.isGeneratingItinerary,
                 error = state.itineraryError,
                 onGenerate = viewModel::generateItinerary,
                 onClear = viewModel::clearItinerary,
+            )
+
+            MembersSection(
+                members = state.members,
+                addableFriends = state.addableFriends,
+                onAdd = viewModel::addMember,
+                onRemove = viewModel::deleteMember,
             )
 
             ChecklistSection(

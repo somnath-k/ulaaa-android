@@ -24,7 +24,6 @@ import com.dotkios.ulaaa.ui.trip.TripDetailScreen
 import com.dotkios.ulaaa.ui.trip.TripsScreen
 import com.dotkios.ulaaa.ui.tripchat.TripChatScreen
 
-private const val ROUTE_TRIPS = "trips"
 private const val ROUTE_TRIP_CREATE = "trip_create"
 private const val ROUTE_CHAT = "chat"
 private const val ROUTE_TRIP_DETAIL = "trip_detail"
@@ -53,10 +52,16 @@ fun MainShell(onSignOut: () -> Unit) {
         ) {
             composable(TopLevelDestination.HOME.route) {
                 HomeScreen(
-                    onSeeAllTrips = { navController.navigate(ROUTE_TRIPS) },
+                    onSeeAllTrips = { navController.selectTab(TopLevelDestination.TRIPS) },
                     onCreateTrip = { navController.navigate(ROUTE_TRIP_CREATE) },
                     onOpenMap = { navController.selectTab(TopLevelDestination.MAP) },
                     onOpenChat = { navController.navigate(ROUTE_CHAT) },
+                )
+            }
+            composable(TopLevelDestination.TRIPS.route) {
+                TripsScreen(
+                    onCreateTrip = { navController.navigate(ROUTE_TRIP_CREATE) },
+                    onOpenTrip = { id -> navController.navigate("$ROUTE_TRIP_DETAIL/$id") },
                 )
             }
             composable(TopLevelDestination.MAP.route) { MapScreen() }
@@ -68,13 +73,6 @@ fun MainShell(onSignOut: () -> Unit) {
                 )
             }
 
-            composable(ROUTE_TRIPS) {
-                TripsScreen(
-                    onBack = { navController.popBackStack() },
-                    onCreateTrip = { navController.navigate(ROUTE_TRIP_CREATE) },
-                    onOpenTrip = { id -> navController.navigate("$ROUTE_TRIP_DETAIL/$id") },
-                )
-            }
             composable(
                 route = "$ROUTE_TRIP_DETAIL/{tripId}",
                 arguments = listOf(navArgument("tripId") { type = NavType.StringType }),
