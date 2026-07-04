@@ -7,6 +7,7 @@ import com.dotkios.ulaaa.data.model.Category
 import com.dotkios.ulaaa.data.model.CuratedItinerary
 import com.dotkios.ulaaa.data.model.Landmark
 import com.dotkios.ulaaa.data.repository.AuthRepository
+import com.dotkios.ulaaa.data.repository.RecommendationRepository
 import com.dotkios.ulaaa.data.repository.TripRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,27 +15,32 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     tripRepository: TripRepository,
     authRepository: AuthRepository,
+    private val recommendationRepository: RecommendationRepository,
 ) : ViewModel() {
 
     private val query = MutableStateFlow("")
+
+    // Seeded with mock data so the rail is never empty; Gemini overwrites it on success.
+    private val curated = MutableStateFlow(MockData.curated)
 
     private val userName: String =
         authRepository.currentUser?.displayName?.takeIf { it.isNotBlank() } ?: "Explorer"
 
     val uiState: StateFlow<HomeUiState> =
-        combine(query, tripRepository.trips) { q, trips ->
+        combine(query, tripRepository.trips, curated) { q, trips, curatedList ->
             HomeUiState(
                 isLoading = false,
                 userName = userName,
                 query = q,
                 trips = trips,
-                curated = MockData.curated,
+                curated = curatedList,
                 nearbyLandmarks = MockData.landmarks,
                 categories = MockData.categories,
             )
@@ -44,8 +50,20 @@ class HomeViewModel @Inject constructor(
             initialValue = HomeUiState(isLoading = true, userName = userName),
         )
 
+    init {
+        loadRecommendations()
+    }
+
     fun onQueryChange(value: String) {
         query.value = value
+    }
+
+    private fun loadRecommendations() {
+        viewModelScope.launch {
+            recommendationRepository.curatedItineraries("beaches, heritage and mountains")
+                .onSuccess { list -> if (list.isNotEmpty()) curated.value = list }
+            // On failure we keep the seeded mock list — no user-facing error for a soft feature.
+        }
     }
 }
 

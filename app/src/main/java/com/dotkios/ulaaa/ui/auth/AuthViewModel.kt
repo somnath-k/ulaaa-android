@@ -1,6 +1,5 @@
 package com.dotkios.ulaaa.ui.auth
 
-import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dotkios.ulaaa.data.repository.AuthRepository
@@ -60,11 +59,15 @@ class AuthViewModel @Inject constructor(
 
     private fun validate(email: String, password: String): String? = when {
         email.isBlank() -> "Enter your email"
-        !Patterns.EMAIL_ADDRESS.matcher(email.trim()).matches() -> "Enter a valid email"
+        !EMAIL_REGEX.matches(email.trim()) -> "Enter a valid email"
         password.length < 6 -> "Password must be at least 6 characters"
         else -> null
     }
 
     private fun Throwable.friendly(): String =
         message?.takeIf { it.isNotBlank() } ?: "Something went wrong. Try again."
+
+    private companion object {
+        val EMAIL_REGEX = Regex("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")
+    }
 }
