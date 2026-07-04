@@ -14,6 +14,8 @@ import com.dotkios.ulaaa.data.repository.PlacesRepository
 import com.dotkios.ulaaa.data.repository.PlacesRepositoryImpl
 import com.dotkios.ulaaa.data.repository.RecommendationRepository
 import com.dotkios.ulaaa.data.repository.RecommendationRepositoryImpl
+import com.dotkios.ulaaa.data.repository.TripChatRepository
+import com.dotkios.ulaaa.data.repository.TripChatRepositoryImpl
 import com.dotkios.ulaaa.data.repository.TripDetailRepository
 import com.dotkios.ulaaa.data.repository.TripDetailRepositoryImpl
 import com.dotkios.ulaaa.data.repository.TripRepository
@@ -69,4 +71,8 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindItineraryRepository(impl: ItineraryRepositoryImpl): ItineraryRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindTripChatRepository(impl: TripChatRepositoryImpl): TripChatRepository
 }
