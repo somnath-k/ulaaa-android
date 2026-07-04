@@ -1,6 +1,12 @@
 package com.dotkios.ulaaa.ui.friends
 
+import android.app.Activity
+import android.content.Context
 import android.content.Intent
+import android.net.Uri
+import android.provider.ContactsContract
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContract
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,6 +26,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.outlined.Contacts
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -59,6 +66,18 @@ fun FriendsScreen(
     val search by viewModel.search.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var email by remember { mutableStateOf("") }
+
+    // System phone-number picker — one-time access to the chosen contact, no permission needed.
+    val pickContact = rememberLauncherForActivityResult(PickPhoneNumberContract()) { uri ->
+        val number = uri?.let { readContactNumber(context, it) }
+        if (number != null) {
+            context.startActivity(
+                Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:$number")).apply {
+                    putExtra("sms_body", "Join me on Ulaaa — let's plan a trip together! 🌍")
+                },
+            )
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -103,6 +122,16 @@ fun FriendsScreen(
                     message = search.message,
                     onSendRequest = { viewModel.sendRequest(it) },
                 )
+            }
+
+            item {
+                FilledTonalButton(
+                    onClick = { pickContact.launch(Unit) },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Icon(Icons.Outlined.Contacts, contentDescription = null)
+                    Text("Invite from contacts", modifier = Modifier.padding(start = 8.dp))
+                }
             }
 
             if (requests.isNotEmpty()) {
@@ -244,6 +273,23 @@ private fun FriendRow(friend: Friend, onRemove: () -> Unit) {
             TextButton(onClick = onRemove) { Text("Remove") }
         }
     }
+}
+
+/** Picks a single phone number from contacts. Grants one-time access to just that row. */
+private class PickPhoneNumberContract : ActivityResultContract<Unit, Uri?>() {
+    override fun createIntent(context: Context, input: Unit): Intent =
+        Intent(Intent.ACTION_PICK).apply { type = ContactsContract.CommonDataKinds.Phone.CONTENT_TYPE }
+
+    override fun parseResult(resultCode: Int, intent: Intent?): Uri? =
+        if (resultCode == Activity.RESULT_OK) intent?.data else null
+}
+
+private fun readContactNumber(context: Context, uri: Uri): String? {
+    val projection = arrayOf(ContactsContract.CommonDataKinds.Phone.NUMBER)
+    context.contentResolver.query(uri, projection, null, null, null)?.use { cursor ->
+        if (cursor.moveToFirst()) return cursor.getString(0)
+    }
+    return null
 }
 
 @Composable
