@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -18,9 +19,11 @@ import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -46,6 +49,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dotkios.ulaaa.data.model.ChecklistItem
 import com.dotkios.ulaaa.data.model.Expense
 import com.dotkios.ulaaa.data.model.Friend
+import com.dotkios.ulaaa.data.model.ItineraryStop
 import com.dotkios.ulaaa.data.model.SplitResult
 import com.dotkios.ulaaa.data.model.TripMember
 
@@ -92,6 +96,14 @@ fun TripDetailScreen(
                 addableFriends = state.addableFriends,
                 onAdd = viewModel::addMember,
                 onRemove = viewModel::deleteMember,
+            )
+
+            ItinerarySection(
+                stops = state.itinerary,
+                isGenerating = state.isGeneratingItinerary,
+                error = state.itineraryError,
+                onGenerate = viewModel::generateItinerary,
+                onClear = viewModel::clearItinerary,
             )
 
             ChecklistSection(
@@ -201,6 +213,72 @@ private fun FriendPickerDialog(
         confirmButton = {},
         dismissButton = { TextButton(onClick = onDismiss) { Text("Close") } },
     )
+}
+
+@Composable
+private fun ItinerarySection(
+    stops: List<ItineraryStop>,
+    isGenerating: Boolean,
+    error: String?,
+    onGenerate: () -> Unit,
+    onClear: () -> Unit,
+) {
+    SectionCard(title = "Itinerary") {
+        when {
+            isGenerating -> Row(verticalAlignment = Alignment.CenterVertically) {
+                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                Text(
+                    "Dot is planning your trip…",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(start = 12.dp),
+                )
+            }
+
+            stops.isEmpty() -> Text(
+                "No itinerary yet. Let Dot draft a day-by-day plan.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            else -> {
+                stops.groupBy { it.day }.toSortedMap().forEach { (day, dayStops) ->
+                    Text(
+                        "Day $day",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    dayStops.forEach { stop ->
+                        Column(modifier = Modifier.padding(start = 8.dp, bottom = 6.dp)) {
+                            Text(stop.title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                            if (stop.detail.isNotBlank()) {
+                                Text(
+                                    stop.detail,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        error?.let {
+            Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
+        }
+
+        if (!isGenerating) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = onGenerate) {
+                    Text(if (stops.isEmpty()) "Generate with AI" else "Regenerate")
+                }
+                if (stops.isNotEmpty()) {
+                    TextButton(onClick = onClear) { Text("Clear") }
+                }
+            }
+        }
+    }
 }
 
 @Composable

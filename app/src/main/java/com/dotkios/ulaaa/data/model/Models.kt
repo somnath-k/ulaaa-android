@@ -9,6 +9,7 @@ data class Trip(
     val destination: String,
     val dateRange: String,
     val squadSize: Int,
+    val days: Int,
     val accent: Color,
 )
 

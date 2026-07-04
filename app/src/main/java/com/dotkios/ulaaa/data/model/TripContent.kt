@@ -19,6 +19,13 @@ data class Expense(
     val paidBy: String,
 )
 
+data class ItineraryStop(
+    val id: String,
+    val day: Int,
+    val title: String,
+    val detail: String,
+)
+
 /** One suggested transfer to settle up. */
 data class Settlement(
     val from: String,

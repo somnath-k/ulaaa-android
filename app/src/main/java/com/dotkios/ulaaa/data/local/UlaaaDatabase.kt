@@ -5,11 +5,13 @@ import androidx.room.RoomDatabase
 import com.dotkios.ulaaa.data.local.dao.BucketDao
 import com.dotkios.ulaaa.data.local.dao.ChecklistDao
 import com.dotkios.ulaaa.data.local.dao.ExpenseDao
+import com.dotkios.ulaaa.data.local.dao.ItineraryDao
 import com.dotkios.ulaaa.data.local.dao.MemberDao
 import com.dotkios.ulaaa.data.local.dao.TripDao
 import com.dotkios.ulaaa.data.local.entity.BucketItemEntity
 import com.dotkios.ulaaa.data.local.entity.ChecklistItemEntity
 import com.dotkios.ulaaa.data.local.entity.ExpenseEntity
+import com.dotkios.ulaaa.data.local.entity.ItineraryStopEntity
 import com.dotkios.ulaaa.data.local.entity.TripEntity
 import com.dotkios.ulaaa.data.local.entity.TripMemberEntity
 
@@ -20,8 +22,9 @@ import com.dotkios.ulaaa.data.local.entity.TripMemberEntity
         ChecklistItemEntity::class,
         TripMemberEntity::class,
         ExpenseEntity::class,
+        ItineraryStopEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = false,
 )
 abstract class UlaaaDatabase : RoomDatabase() {
@@ -30,4 +33,5 @@ abstract class UlaaaDatabase : RoomDatabase() {
     abstract fun checklistDao(): ChecklistDao
     abstract fun memberDao(): MemberDao
     abstract fun expenseDao(): ExpenseDao
+    abstract fun itineraryDao(): ItineraryDao
 }

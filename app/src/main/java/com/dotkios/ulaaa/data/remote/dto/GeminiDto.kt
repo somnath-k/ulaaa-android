@@ -43,3 +43,11 @@ data class ItinerarySuggestion(
     val subtitle: String,
     val stopCount: Int,
 )
+
+/** One day-stop in a generated trip itinerary. */
+@Serializable
+data class ItineraryStopSuggestion(
+    val day: Int,
+    val title: String,
+    val detail: String,
+)

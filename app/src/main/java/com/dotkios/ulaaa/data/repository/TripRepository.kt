@@ -67,8 +67,15 @@ class TripRepositoryImpl @Inject constructor(
         destination = destination,
         dateRange = formatRange(startMillis, endMillis),
         squadSize = squadSize,
+        days = durationDays(startMillis, endMillis),
         accent = Color(colorArgb.toInt()),
     )
+
+    private fun durationDays(startMillis: Long, endMillis: Long): Int {
+        if (startMillis <= 0L || endMillis < startMillis) return 3
+        val dayMs = 86_400_000L
+        return ((endMillis - startMillis) / dayMs).toInt() + 1
+    }
 
     private fun formatRange(startMillis: Long, endMillis: Long): String {
         if (startMillis <= 0L) return "Dates TBD"

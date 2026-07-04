@@ -6,6 +6,7 @@ import com.dotkios.ulaaa.data.local.UlaaaDatabase
 import com.dotkios.ulaaa.data.local.dao.BucketDao
 import com.dotkios.ulaaa.data.local.dao.ChecklistDao
 import com.dotkios.ulaaa.data.local.dao.ExpenseDao
+import com.dotkios.ulaaa.data.local.dao.ItineraryDao
 import com.dotkios.ulaaa.data.local.dao.MemberDao
 import com.dotkios.ulaaa.data.local.dao.TripDao
 import dagger.Module
@@ -41,4 +42,7 @@ object DatabaseModule {
 
     @Provides
     fun provideExpenseDao(db: UlaaaDatabase): ExpenseDao = db.expenseDao()
+
+    @Provides
+    fun provideItineraryDao(db: UlaaaDatabase): ItineraryDao = db.itineraryDao()
 }
