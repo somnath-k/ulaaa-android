@@ -37,8 +37,8 @@ com.dotkios.ulaaa
 - [x] Sprint 1 — Project setup, design system, bottom navigation, Home UI
 - [x] Sprint 2 — Firebase Authentication + Firestore user profiles
 - [x] Sprint 3 — Ola Maps, current location, nearby landmarks (Geoapify)
-- [ ] Sprint 4 — Trip management, Bucket List, Room
-- [ ] Sprint 5 — Gemini recommendations, polish, testing
+- [x] Sprint 4 — Trip management, Bucket List, Room
+- [x] Sprint 5 — Gemini recommendations, unit tests
 
 ## Setup
 This project needs local secrets that are **not** committed:
