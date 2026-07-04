@@ -45,6 +45,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dotkios.ulaaa.data.model.ChecklistItem
 import com.dotkios.ulaaa.data.model.Expense
+import com.dotkios.ulaaa.data.model.Friend
 import com.dotkios.ulaaa.data.model.SplitResult
 import com.dotkios.ulaaa.data.model.TripMember
 
@@ -88,6 +89,7 @@ fun TripDetailScreen(
 
             MembersSection(
                 members = state.members,
+                addableFriends = state.addableFriends,
                 onAdd = viewModel::addMember,
                 onRemove = viewModel::deleteMember,
             )
@@ -131,10 +133,11 @@ private fun SectionCard(title: String, content: @Composable () -> Unit) {
 @Composable
 private fun MembersSection(
     members: List<TripMember>,
-    onAdd: (String) -> Unit,
+    addableFriends: List<Friend>,
+    onAdd: (Friend) -> Unit,
     onRemove: (String) -> Unit,
 ) {
-    var showDialog by remember { mutableStateOf(false) }
+    var showPicker by remember { mutableStateOf(false) }
     SectionCard(title = "Squad (${members.size})") {
         if (members.isEmpty()) {
             Text(
@@ -152,23 +155,52 @@ private fun MembersSection(
                 )
             }
             AssistChip(
-                onClick = { showDialog = true },
+                onClick = { showPicker = true },
                 label = { Text("Add friend") },
                 leadingIcon = { Icon(Icons.Filled.Add, contentDescription = null) },
             )
         }
     }
-    if (showDialog) {
-        TextInputDialog(
-            title = "Add friend",
-            label = "Name",
-            onDismiss = { showDialog = false },
-            onConfirm = {
+    if (showPicker) {
+        FriendPickerDialog(
+            friends = addableFriends,
+            onDismiss = { showPicker = false },
+            onPick = {
                 onAdd(it)
-                showDialog = false
+                showPicker = false
             },
         )
     }
+}
+
+@Composable
+private fun FriendPickerDialog(
+    friends: List<Friend>,
+    onDismiss: () -> Unit,
+    onPick: (Friend) -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Add from friends") },
+        text = {
+            if (friends.isEmpty()) {
+                Text("No friends to add. Add friends from Profile → Friends first.")
+            } else {
+                Column {
+                    friends.forEach { friend ->
+                        TextButton(
+                            onClick = { onPick(friend) },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(friend.name, modifier = Modifier.fillMaxWidth())
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Close") } },
+    )
 }
 
 @Composable
@@ -356,29 +388,3 @@ private fun AddExpenseDialog(
     )
 }
 
-@Composable
-private fun TextInputDialog(
-    title: String,
-    label: String,
-    onDismiss: () -> Unit,
-    onConfirm: (String) -> Unit,
-) {
-    var value by remember { mutableStateOf("") }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(title) },
-        text = {
-            OutlinedTextField(
-                value = value,
-                onValueChange = { value = it },
-                label = { Text(label) },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        },
-        confirmButton = {
-            TextButton(onClick = { onConfirm(value) }, enabled = value.isNotBlank()) { Text("Add") }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
-    )
-}

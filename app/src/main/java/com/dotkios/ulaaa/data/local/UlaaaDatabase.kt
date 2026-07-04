@@ -21,7 +21,7 @@ import com.dotkios.ulaaa.data.local.entity.TripMemberEntity
         TripMemberEntity::class,
         ExpenseEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = false,
 )
 abstract class UlaaaDatabase : RoomDatabase() {

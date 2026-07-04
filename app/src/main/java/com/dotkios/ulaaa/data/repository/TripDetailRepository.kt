@@ -24,7 +24,7 @@ interface TripDetailRepository {
     suspend fun setChecklistDone(itemId: String, done: Boolean)
     suspend fun deleteChecklistItem(itemId: String)
 
-    suspend fun addMember(tripId: String, name: String)
+    suspend fun addMember(tripId: String, uid: String, name: String)
     suspend fun deleteMember(memberId: String)
 
     suspend fun addExpense(tripId: String, title: String, amount: Double, paidBy: String)
@@ -45,7 +45,7 @@ class TripDetailRepositoryImpl @Inject constructor(
 
     override fun members(tripId: String): Flow<List<TripMember>> =
         memberDao.observeByTrip(tripId).map { list ->
-            list.map { TripMember(it.id, it.name) }
+            list.map { TripMember(it.id, it.uid, it.name) }
         }
 
     override fun expenses(tripId: String): Flow<List<Expense>> =
@@ -71,12 +71,13 @@ class TripDetailRepositoryImpl @Inject constructor(
 
     override suspend fun deleteChecklistItem(itemId: String) = checklistDao.delete(itemId)
 
-    override suspend fun addMember(tripId: String, name: String) {
+    override suspend fun addMember(tripId: String, uid: String, name: String) {
         if (name.isBlank()) return
         memberDao.upsert(
             TripMemberEntity(
                 id = UUID.randomUUID().toString(),
                 tripId = tripId,
+                uid = uid,
                 name = name.trim(),
             ),
         )

@@ -8,6 +8,7 @@ data class ChecklistItem(
 
 data class TripMember(
     val id: String,
+    val uid: String,
     val name: String,
 )
 

@@ -5,9 +5,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dotkios.ulaaa.data.model.ChecklistItem
 import com.dotkios.ulaaa.data.model.Expense
+import com.dotkios.ulaaa.data.model.Friend
 import com.dotkios.ulaaa.data.model.SplitResult
 import com.dotkios.ulaaa.data.model.Trip
 import com.dotkios.ulaaa.data.model.TripMember
+import com.dotkios.ulaaa.data.repository.FriendRepository
 import com.dotkios.ulaaa.data.repository.TripDetailRepository
 import com.dotkios.ulaaa.data.repository.TripRepository
 import com.dotkios.ulaaa.domain.SplitCalculator
@@ -25,6 +27,8 @@ data class TripDetailUiState(
     val checklist: List<ChecklistItem> = emptyList(),
     val expenses: List<Expense> = emptyList(),
     val split: SplitResult = SplitResult(0.0, 0.0, emptyMap(), emptyList()),
+    /** Friends not already in this trip's squad — the pool the picker adds from. */
+    val addableFriends: List<Friend> = emptyList(),
 )
 
 @HiltViewModel
@@ -32,6 +36,7 @@ class TripDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val tripRepository: TripRepository,
     private val detailRepository: TripDetailRepository,
+    friendRepository: FriendRepository,
 ) : ViewModel() {
 
     private val tripId: String = checkNotNull(savedStateHandle["tripId"])
@@ -41,13 +46,16 @@ class TripDetailViewModel @Inject constructor(
         detailRepository.members(tripId),
         detailRepository.checklist(tripId),
         detailRepository.expenses(tripId),
-    ) { trip, members, checklist, expenses ->
+        friendRepository.friends(),
+    ) { trip, members, checklist, expenses, friends ->
+        val memberUids = members.map { it.uid }.toSet()
         TripDetailUiState(
             trip = trip,
             members = members,
             checklist = checklist,
             expenses = expenses,
             split = SplitCalculator.calculate(members.map { it.name }, expenses),
+            addableFriends = friends.filter { it.uid !in memberUids },
         )
     }.stateIn(
         scope = viewModelScope,
@@ -55,7 +63,7 @@ class TripDetailViewModel @Inject constructor(
         initialValue = TripDetailUiState(),
     )
 
-    fun addMember(name: String) = launch { detailRepository.addMember(tripId, name) }
+    fun addMember(friend: Friend) = launch { detailRepository.addMember(tripId, friend.uid, friend.name) }
     fun deleteMember(id: String) = launch { detailRepository.deleteMember(id) }
 
     fun addChecklistItem(text: String) = launch { detailRepository.addChecklistItem(tripId, text) }

@@ -23,6 +23,7 @@ data class ChecklistItemEntity(
 data class TripMemberEntity(
     @PrimaryKey val id: String,
     val tripId: String,
+    val uid: String,
     val name: String,
 )
 
