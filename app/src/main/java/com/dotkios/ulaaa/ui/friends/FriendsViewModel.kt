@@ -6,6 +6,7 @@ import com.dotkios.ulaaa.data.model.Friend
 import com.dotkios.ulaaa.data.model.FriendRequest
 import com.dotkios.ulaaa.data.model.UserProfile
 import com.dotkios.ulaaa.data.repository.FriendRepository
+import com.dotkios.ulaaa.util.normalizePhone
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -37,6 +38,37 @@ class FriendsViewModel @Inject constructor(
 
     private val _search = MutableStateFlow(SearchState())
     val search: StateFlow<SearchState> = _search.asStateFlow()
+
+    /** When set, the UI should fire an SMS invite to this number, then consume it. */
+    private val _smsInvite = MutableStateFlow<String?>(null)
+    val smsInvite: StateFlow<String?> = _smsInvite.asStateFlow()
+
+    /** A picked contact: if they're already a Ulaaa user, surface them to add; else invite by SMS. */
+    fun onContactPicked(rawNumber: String) {
+        val normalized = normalizePhone(rawNumber)
+        _search.update { it.copy(isSearching = true, message = null, result = null) }
+        viewModelScope.launch {
+            friendRepository.findByPhone(normalized)
+                .onSuccess { profile ->
+                    if (profile != null) {
+                        _search.update {
+                            it.copy(isSearching = false, result = profile, message = "${profile.name} is on Ulaaa!")
+                        }
+                    } else {
+                        _search.update { SearchState() }
+                        _smsInvite.value = rawNumber
+                    }
+                }
+                .onFailure {
+                    _search.update { SearchState() }
+                    _smsInvite.value = rawNumber
+                }
+        }
+    }
+
+    fun consumeSmsInvite() {
+        _smsInvite.value = null
+    }
 
     fun search(email: String) {
         if (email.isBlank()) return

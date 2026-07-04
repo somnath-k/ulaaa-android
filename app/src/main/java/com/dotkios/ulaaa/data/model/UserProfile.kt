@@ -5,5 +5,7 @@ data class UserProfile(
     val uid: String = "",
     val name: String = "",
     val email: String = "",
+    /** Normalized phone (digits only, last 10) — used to match contacts to users. */
+    val phone: String = "",
     val createdAt: Long = 0L,
 )

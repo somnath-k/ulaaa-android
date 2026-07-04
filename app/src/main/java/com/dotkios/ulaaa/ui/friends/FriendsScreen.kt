@@ -40,6 +40,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -66,17 +67,23 @@ fun FriendsScreen(
     val search by viewModel.search.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var email by remember { mutableStateOf("") }
+    val smsInvite by viewModel.smsInvite.collectAsStateWithLifecycle()
 
     // System phone-number picker — one-time access to the chosen contact, no permission needed.
     val pickContact = rememberLauncherForActivityResult(PickPhoneNumberContract()) { uri ->
         val number = uri?.let { readContactNumber(context, it) }
-        if (number != null) {
-            context.startActivity(
-                Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:$number")).apply {
-                    putExtra("sms_body", "Join me on Ulaaa — let's plan a trip together! 🌍")
-                },
-            )
-        }
+        if (number != null) viewModel.onContactPicked(number)
+    }
+
+    // If the picked contact isn't a Ulaaa user, fall back to an SMS invite.
+    LaunchedEffect(smsInvite) {
+        val number = smsInvite ?: return@LaunchedEffect
+        context.startActivity(
+            Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:$number")).apply {
+                putExtra("sms_body", "Join me on Ulaaa — let's plan a trip together! 🌍")
+            },
+        )
+        viewModel.consumeSmsInvite()
     }
 
     Scaffold(
