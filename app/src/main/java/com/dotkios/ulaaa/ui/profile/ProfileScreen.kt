@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -24,6 +25,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 @Composable
 fun ProfileScreen(
     onSignOut: () -> Unit,
+    onOpenFriends: () -> Unit,
     viewModel: ProfileViewModel = hiltViewModel(),
 ) {
     val state = viewModel.uiState
@@ -61,6 +63,10 @@ fun ProfileScreen(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.height(32.dp))
+        Button(onClick = onOpenFriends) {
+            Text("Friends")
+        }
+        Spacer(Modifier.height(12.dp))
         OutlinedButton(
             onClick = {
                 viewModel.signOut()

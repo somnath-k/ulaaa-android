@@ -6,6 +6,8 @@ import com.dotkios.ulaaa.data.repository.BucketRepository
 import com.dotkios.ulaaa.data.repository.BucketRepositoryImpl
 import com.dotkios.ulaaa.data.repository.ChatRepository
 import com.dotkios.ulaaa.data.repository.ChatRepositoryImpl
+import com.dotkios.ulaaa.data.repository.FriendRepository
+import com.dotkios.ulaaa.data.repository.FriendRepositoryImpl
 import com.dotkios.ulaaa.data.repository.PlacesRepository
 import com.dotkios.ulaaa.data.repository.PlacesRepositoryImpl
 import com.dotkios.ulaaa.data.repository.RecommendationRepository
@@ -57,4 +59,8 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindTripDetailRepository(impl: TripDetailRepositoryImpl): TripDetailRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindFriendRepository(impl: FriendRepositoryImpl): FriendRepository
 }
