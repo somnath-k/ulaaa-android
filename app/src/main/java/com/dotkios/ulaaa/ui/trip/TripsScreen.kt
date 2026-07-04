@@ -46,6 +46,7 @@ import com.dotkios.ulaaa.ui.components.AvatarGroup
 fun TripsScreen(
     onBack: () -> Unit,
     onCreateTrip: () -> Unit,
+    onOpenTrip: (String) -> Unit,
     viewModel: TripsViewModel = hiltViewModel(),
 ) {
     val trips by viewModel.trips.collectAsStateWithLifecycle()
@@ -99,7 +100,11 @@ fun TripsScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 items(trips, key = { it.id }) { trip ->
-                    TripRow(trip = trip, onDelete = { viewModel.delete(trip.id) })
+                    TripRow(
+                        trip = trip,
+                        onClick = { onOpenTrip(trip.id) },
+                        onDelete = { viewModel.delete(trip.id) },
+                    )
                 }
             }
         }
@@ -107,8 +112,9 @@ fun TripsScreen(
 }
 
 @Composable
-private fun TripRow(trip: Trip, onDelete: () -> Unit) {
+private fun TripRow(trip: Trip, onClick: () -> Unit, onDelete: () -> Unit) {
     Card(
+        onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),

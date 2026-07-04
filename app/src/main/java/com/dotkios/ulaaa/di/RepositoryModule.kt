@@ -4,10 +4,14 @@ import com.dotkios.ulaaa.data.repository.AuthRepository
 import com.dotkios.ulaaa.data.repository.AuthRepositoryImpl
 import com.dotkios.ulaaa.data.repository.BucketRepository
 import com.dotkios.ulaaa.data.repository.BucketRepositoryImpl
+import com.dotkios.ulaaa.data.repository.ChatRepository
+import com.dotkios.ulaaa.data.repository.ChatRepositoryImpl
 import com.dotkios.ulaaa.data.repository.PlacesRepository
 import com.dotkios.ulaaa.data.repository.PlacesRepositoryImpl
 import com.dotkios.ulaaa.data.repository.RecommendationRepository
 import com.dotkios.ulaaa.data.repository.RecommendationRepositoryImpl
+import com.dotkios.ulaaa.data.repository.TripDetailRepository
+import com.dotkios.ulaaa.data.repository.TripDetailRepositoryImpl
 import com.dotkios.ulaaa.data.repository.TripRepository
 import com.dotkios.ulaaa.data.repository.TripRepositoryImpl
 import com.dotkios.ulaaa.data.repository.UserRepository
@@ -45,4 +49,12 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindRecommendationRepository(impl: RecommendationRepositoryImpl): RecommendationRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindChatRepository(impl: ChatRepositoryImpl): ChatRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindTripDetailRepository(impl: TripDetailRepositoryImpl): TripDetailRepository
 }

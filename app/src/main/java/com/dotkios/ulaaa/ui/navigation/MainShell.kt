@@ -7,19 +7,25 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.dotkios.ulaaa.ui.bucketlist.BucketListScreen
+import com.dotkios.ulaaa.ui.chat.ChatScreen
 import com.dotkios.ulaaa.ui.home.HomeScreen
 import com.dotkios.ulaaa.ui.map.MapScreen
 import com.dotkios.ulaaa.ui.profile.ProfileScreen
 import com.dotkios.ulaaa.ui.trip.CreateTripScreen
+import com.dotkios.ulaaa.ui.trip.TripDetailScreen
 import com.dotkios.ulaaa.ui.trip.TripsScreen
 
 private const val ROUTE_TRIPS = "trips"
 private const val ROUTE_TRIP_CREATE = "trip_create"
+private const val ROUTE_CHAT = "chat"
+private const val ROUTE_TRIP_DETAIL = "trip_detail"
 
 /** Authenticated shell: bottom-nav Scaffold hosting the top-level destinations. */
 @Composable
@@ -46,6 +52,7 @@ fun MainShell(onSignOut: () -> Unit) {
                     onSeeAllTrips = { navController.navigate(ROUTE_TRIPS) },
                     onCreateTrip = { navController.navigate(ROUTE_TRIP_CREATE) },
                     onOpenMap = { navController.selectTab(TopLevelDestination.MAP) },
+                    onOpenChat = { navController.navigate(ROUTE_CHAT) },
                 )
             }
             composable(TopLevelDestination.MAP.route) { MapScreen() }
@@ -56,13 +63,23 @@ fun MainShell(onSignOut: () -> Unit) {
                 TripsScreen(
                     onBack = { navController.popBackStack() },
                     onCreateTrip = { navController.navigate(ROUTE_TRIP_CREATE) },
+                    onOpenTrip = { id -> navController.navigate("$ROUTE_TRIP_DETAIL/$id") },
                 )
+            }
+            composable(
+                route = "$ROUTE_TRIP_DETAIL/{tripId}",
+                arguments = listOf(navArgument("tripId") { type = NavType.StringType }),
+            ) {
+                TripDetailScreen(onBack = { navController.popBackStack() })
             }
             composable(ROUTE_TRIP_CREATE) {
                 CreateTripScreen(
                     onDone = { navController.popBackStack() },
                     onBack = { navController.popBackStack() },
                 )
+            }
+            composable(ROUTE_CHAT) {
+                ChatScreen(onBack = { navController.popBackStack() })
             }
         }
     }

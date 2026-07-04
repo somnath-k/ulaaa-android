@@ -5,12 +5,14 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class GeminiRequest(
     val contents: List<GeminiContent>,
+    val systemInstruction: GeminiContent? = null,
     val generationConfig: GeminiGenerationConfig? = null,
 )
 
 @Serializable
 data class GeminiContent(
     val parts: List<GeminiPart>,
+    val role: String? = null,
 )
 
 @Serializable

@@ -16,6 +16,7 @@ import javax.inject.Singleton
 
 interface TripRepository {
     val trips: Flow<List<Trip>>
+    fun trip(id: String): Flow<Trip?>
     suspend fun addTrip(
         title: String,
         destination: String,
@@ -33,6 +34,9 @@ class TripRepositoryImpl @Inject constructor(
 
     override val trips: Flow<List<Trip>> =
         dao.observeAll().map { list -> list.map { it.toTrip() } }
+
+    override fun trip(id: String): Flow<Trip?> =
+        dao.observeAll().map { list -> list.firstOrNull { it.id == id }?.toTrip() }
 
     override suspend fun addTrip(
         title: String,

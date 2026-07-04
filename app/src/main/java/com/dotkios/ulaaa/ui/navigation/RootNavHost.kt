@@ -6,6 +6,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.dotkios.ulaaa.ui.auth.LoginScreen
 import com.dotkios.ulaaa.ui.auth.SignupScreen
+import com.dotkios.ulaaa.ui.location.LocationGate
 import com.dotkios.ulaaa.ui.splash.SplashScreen
 
 object Routes {
@@ -51,11 +52,14 @@ fun UlaaaRoot() {
         }
 
         composable(Routes.MAIN) {
-            MainShell(
-                onSignOut = {
-                    nav.navigate(Routes.LOGIN) { popUpTo(Routes.MAIN) { inclusive = true } }
-                },
-            )
+            // Location is mandatory — the shell only renders once permission is granted.
+            LocationGate {
+                MainShell(
+                    onSignOut = {
+                        nav.navigate(Routes.LOGIN) { popUpTo(Routes.MAIN) { inclusive = true } }
+                    },
+                )
+            }
         }
     }
 }
