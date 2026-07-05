@@ -11,6 +11,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import kotlinx.serialization.json.Json
+import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -38,7 +39,15 @@ object NetworkModule {
                 HttpLoggingInterceptor.Level.NONE
             }
         }
+        // Wikimedia (and good practice everywhere) rejects blank/default User-Agents with 403.
+        val userAgent = Interceptor { chain ->
+            val request = chain.request().newBuilder()
+                .header("User-Agent", "Ulaaa/1.0 (https://github.com/somnath-k/ulaaa-android)")
+                .build()
+            chain.proceed(request)
+        }
         return OkHttpClient.Builder()
+            .addInterceptor(userAgent)
             .addInterceptor(logging)
             .build()
     }
