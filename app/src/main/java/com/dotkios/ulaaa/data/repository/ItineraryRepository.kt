@@ -76,7 +76,7 @@ class ItineraryRepositoryImpl @Inject constructor(
                 generationConfig = GeminiGenerationConfig(responseMimeType = "application/json", temperature = 0.8),
             ),
         )
-        val text = response.candidates.firstOrNull()?.content?.parts?.firstOrNull()?.text
+        val text = response.candidates.firstOrNull()?.content?.parts?.firstNotNullOfOrNull { it.text }
             ?: error("Gemini returned no itinerary")
         val stops = json.decodeFromString<List<ItineraryStopSuggestion>>(text)
 

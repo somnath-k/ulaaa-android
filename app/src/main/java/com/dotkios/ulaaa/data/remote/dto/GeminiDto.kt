@@ -17,7 +17,8 @@ data class GeminiContent(
 
 @Serializable
 data class GeminiPart(
-    val text: String,
+    // Nullable: thinking models (Gemini 3.x) return non-text parts (thought signatures, etc.).
+    val text: String? = null,
 )
 
 @Serializable

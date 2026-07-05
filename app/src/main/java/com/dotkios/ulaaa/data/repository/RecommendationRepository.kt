@@ -42,7 +42,7 @@ class RecommendationRepositoryImpl @Inject constructor(
                 ),
             ),
         )
-        val text = response.candidates.firstOrNull()?.content?.parts?.firstOrNull()?.text
+        val text = response.candidates.firstOrNull()?.content?.parts?.firstNotNullOfOrNull { it.text }
             ?: error("Gemini returned no content")
         json.decodeFromString<List<ItinerarySuggestion>>(text)
             .mapIndexed { index, s ->

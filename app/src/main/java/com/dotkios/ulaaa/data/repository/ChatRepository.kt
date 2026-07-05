@@ -42,7 +42,7 @@ class ChatRepositoryImpl @Inject constructor(
                 generationConfig = GeminiGenerationConfig(temperature = 0.8),
             ),
         )
-        response.candidates.firstOrNull()?.content?.parts?.firstOrNull()?.text?.trim()
+        response.candidates.firstOrNull()?.content?.parts?.firstNotNullOfOrNull { it.text }?.trim()
             ?: error("Dot didn't reply. Try again.")
     }
 
