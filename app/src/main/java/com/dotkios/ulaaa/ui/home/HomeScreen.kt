@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dotkios.ulaaa.ui.components.CategoryChip
+import com.dotkios.ulaaa.ui.components.bounceClick
 import com.dotkios.ulaaa.ui.components.CuratedCard
 import com.dotkios.ulaaa.ui.components.LandmarkCard
 import com.dotkios.ulaaa.ui.components.SectionTitle
@@ -193,11 +194,12 @@ private fun HomeHeader(name: String, onOpenChat: () -> Unit) {
 @Composable
 private fun AiSearchPill(onClick: () -> Unit, modifier: Modifier = Modifier) {
     Surface(
-        onClick = onClick,
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        modifier = modifier
+            .fillMaxWidth()
+            .bounceClick(onClick),
+        shape = RoundedCornerShape(18.dp),
         color = MaterialTheme.colorScheme.surface,
-        shadowElevation = 2.dp,
+        shadowElevation = 3.dp,
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
