@@ -2,35 +2,35 @@ package com.dotkios.ulaaa.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Ulaaa brand palette — "Explore Without Limits"
-// Ocean teal (primary) + coral (secondary) + sand amber (tertiary), refreshed for a 2026 feel.
+// Ulaaa palette — warm, soft, subtle. Teal primary + coral + amber, on warm cream neutrals.
 
-// Light
-val OceanTeal = Color(0xFF0E7C7B)
-val OceanTealDark = Color(0xFF075453)
-val Coral = Color(0xFFFF5A47)
-val CoralDark = Color(0xFFC63F30)
-val SandAmber = Color(0xFFF4A259)
-val SandAmberDark = Color(0xFFC77E3B)
+// Brand accents
+val OceanTeal = Color(0xFF11827F)
+val OceanTealDark = Color(0xFF0A5654)
+val Coral = Color(0xFFFF6F5E)
+val CoralDark = Color(0xFFC94D3E)
+val SandAmber = Color(0xFFEDA45B)
+val SandAmberDark = Color(0xFFC17E3C)
 
-val Color_OceanTealContainer = Color(0xFFB6F3F0)
-val Color_CoralContainer = Color(0xFFFFDAD2)
+val Color_OceanTealContainer = Color(0xFFCDEFEC)
+val Color_CoralContainer = Color(0xFFFFE0DA)
 
-val LightBackground = Color(0xFFFBFAF7)
-val LightSurface = Color(0xFFFFFFFF)
-val LightSurfaceVariant = Color(0xFFE7EDEC)
-val LightOnSurface = Color(0xFF15201F)
-val LightOnSurfaceVariant = Color(0xFF48534F)
-val LightOutline = Color(0xFF7A8582)
+// Light — warm cream neutrals for a cozy, subtle feel
+val LightBackground = Color(0xFFF6F3EE)
+val LightSurface = Color(0xFFFFFDFB)
+val LightSurfaceVariant = Color(0xFFEDE7DE)
+val LightOnSurface = Color(0xFF1F1B16)
+val LightOnSurfaceVariant = Color(0xFF5A544B)
+val LightOutline = Color(0xFF8C857A)
 
-// Dark
-val OceanTealLight = Color(0xFF54DDD8)
-val CoralLight = Color(0xFFFF9A88)
-val SandAmberLight = Color(0xFFFFC58A)
+// Dark — warm-tinted dark
+val OceanTealLight = Color(0xFF5CD6D0)
+val CoralLight = Color(0xFFFFB1A3)
+val SandAmberLight = Color(0xFFFFC98D)
 
-val DarkBackground = Color(0xFF0B1211)
-val DarkSurface = Color(0xFF141D1C)
-val DarkSurfaceVariant = Color(0xFF2A3533)
-val DarkOnSurface = Color(0xFFE3E6E4)
-val DarkOnSurfaceVariant = Color(0xFFBFC9C6)
-val DarkOutline = Color(0xFF89938F)
+val DarkBackground = Color(0xFF14120F)
+val DarkSurface = Color(0xFF1D1B17)
+val DarkSurfaceVariant = Color(0xFF33302A)
+val DarkOnSurface = Color(0xFFE9E4DC)
+val DarkOnSurfaceVariant = Color(0xFFCEC7BB)
+val DarkOutline = Color(0xFF978F82)
