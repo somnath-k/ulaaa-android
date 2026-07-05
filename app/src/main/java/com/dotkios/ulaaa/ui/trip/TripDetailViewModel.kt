@@ -90,15 +90,15 @@ class TripDetailViewModel @Inject constructor(
     )
 
     fun addMember(friend: Friend) = launch { detailRepository.addMember(tripId, friend.uid, friend.name) }
-    fun deleteMember(id: String) = launch { detailRepository.deleteMember(id) }
+    fun deleteMember(id: String) = launch { detailRepository.deleteMember(tripId, id) }
 
     fun addChecklistItem(text: String) = launch { detailRepository.addChecklistItem(tripId, text) }
-    fun toggleChecklist(id: String, done: Boolean) = launch { detailRepository.setChecklistDone(id, done) }
-    fun deleteChecklistItem(id: String) = launch { detailRepository.deleteChecklistItem(id) }
+    fun toggleChecklist(id: String, done: Boolean) = launch { detailRepository.setChecklistDone(tripId, id, done) }
+    fun deleteChecklistItem(id: String) = launch { detailRepository.deleteChecklistItem(tripId, id) }
 
     fun addExpense(title: String, amount: Double, paidBy: String) =
         launch { detailRepository.addExpense(tripId, title, amount, paidBy) }
-    fun deleteExpense(id: String) = launch { detailRepository.deleteExpense(id) }
+    fun deleteExpense(id: String) = launch { detailRepository.deleteExpense(tripId, id) }
 
     fun generateItinerary() {
         val trip = uiState.value.trip ?: return

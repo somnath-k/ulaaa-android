@@ -24,11 +24,10 @@ class CreateTripViewModel @Inject constructor(
         destination: String,
         startMillis: Long,
         endMillis: Long,
-        squadSize: Int,
     ) {
         if (title.isBlank() || destination.isBlank()) return
         viewModelScope.launch {
-            tripRepository.addTrip(title, destination, startMillis, endMillis, squadSize)
+            tripRepository.addTrip(title, destination, startMillis, endMillis)
             _saved.update { true }
         }
     }

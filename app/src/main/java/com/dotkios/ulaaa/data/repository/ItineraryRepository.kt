@@ -1,8 +1,6 @@
 package com.dotkios.ulaaa.data.repository
 
 import com.dotkios.ulaaa.BuildConfig
-import com.dotkios.ulaaa.data.local.dao.ItineraryDao
-import com.dotkios.ulaaa.data.local.entity.ItineraryStopEntity
 import com.dotkios.ulaaa.data.model.ItineraryStop
 import com.dotkios.ulaaa.data.remote.GeminiApi
 import com.dotkios.ulaaa.data.remote.dto.GeminiContent
@@ -10,31 +8,53 @@ import com.dotkios.ulaaa.data.remote.dto.GeminiGenerationConfig
 import com.dotkios.ulaaa.data.remote.dto.GeminiPart
 import com.dotkios.ulaaa.data.remote.dto.GeminiRequest
 import com.dotkios.ulaaa.data.remote.dto.ItineraryStopSuggestion
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
+import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.tasks.await
 import kotlinx.serialization.json.Json
-import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
 interface ItineraryRepository {
     fun observe(tripId: String): Flow<List<ItineraryStop>>
-    /** Ask Gemini for a day-by-day plan and replace the trip's stored itinerary. */
     suspend fun generate(tripId: String, destination: String, days: Int): Result<Unit>
     suspend fun clear(tripId: String): Result<Unit>
 }
 
 @Singleton
 class ItineraryRepositoryImpl @Inject constructor(
-    private val dao: ItineraryDao,
+    private val firestore: FirebaseFirestore,
     private val api: GeminiApi,
     private val json: Json,
 ) : ItineraryRepository {
 
-    override fun observe(tripId: String): Flow<List<ItineraryStop>> =
-        dao.observeByTrip(tripId).map { list ->
-            list.map { ItineraryStop(it.id, it.day, it.title, it.detail) }
-        }
+    private fun itineraryCol(tripId: String) =
+        firestore.collection("trips").document(tripId).collection("itinerary")
+
+    override fun observe(tripId: String): Flow<List<ItineraryStop>> = callbackFlow {
+        val registration = itineraryCol(tripId)
+            .orderBy("day", Query.Direction.ASCENDING)
+            .orderBy("orderIndex", Query.Direction.ASCENDING)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    trySend(emptyList())
+                    return@addSnapshotListener
+                }
+                val stops = snapshot?.documents?.map { doc ->
+                    ItineraryStop(
+                        id = doc.id,
+                        day = (doc.getLong("day") ?: 1L).toInt(),
+                        title = doc.getString("title").orEmpty(),
+                        detail = doc.getString("detail").orEmpty(),
+                    )
+                }.orEmpty()
+                trySend(stops)
+            }
+        awaitClose { registration.remove() }
+    }
 
     override suspend fun generate(tripId: String, destination: String, days: Int): Result<Unit> = runCatching {
         val dayCount = days.coerceIn(1, 10)
@@ -56,21 +76,32 @@ class ItineraryRepositoryImpl @Inject constructor(
             ?: error("Gemini returned no itinerary")
         val stops = json.decodeFromString<List<ItineraryStopSuggestion>>(text)
 
-        val entities = stops.mapIndexed { index, s ->
-            ItineraryStopEntity(
-                id = UUID.randomUUID().toString(),
-                tripId = tripId,
-                day = s.day,
-                title = s.title,
-                detail = s.detail,
-                orderIndex = index,
+        clearInternal(tripId)
+        val batch = firestore.batch()
+        stops.forEachIndexed { index, s ->
+            val doc = itineraryCol(tripId).document()
+            batch.set(
+                doc,
+                mapOf(
+                    "day" to s.day,
+                    "title" to s.title,
+                    "detail" to s.detail,
+                    "orderIndex" to index,
+                ),
             )
         }
-        dao.deleteByTrip(tripId)
-        dao.insertAll(entities)
+        batch.commit().await()
     }
 
     override suspend fun clear(tripId: String): Result<Unit> = runCatching {
-        dao.deleteByTrip(tripId)
+        clearInternal(tripId)
+    }
+
+    private suspend fun clearInternal(tripId: String) {
+        val existing = itineraryCol(tripId).get().await()
+        if (existing.isEmpty) return
+        val batch = firestore.batch()
+        existing.documents.forEach { batch.delete(it.reference) }
+        batch.commit().await()
     }
 }
