@@ -7,6 +7,7 @@ import com.dotkios.ulaaa.data.model.Category
 import com.dotkios.ulaaa.data.model.CuratedItinerary
 import com.dotkios.ulaaa.data.model.Landmark
 import com.dotkios.ulaaa.data.repository.AuthRepository
+import com.dotkios.ulaaa.data.repository.PlaceImageRepository
 import com.dotkios.ulaaa.data.repository.TripRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,31 +15,34 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     tripRepository: TripRepository,
     authRepository: AuthRepository,
+    private val placeImageRepository: PlaceImageRepository,
 ) : ViewModel() {
 
     private val query = MutableStateFlow("")
 
     // Static curated rail — no per-open Gemini call (that drained the tiny free quota).
     private val curated = MutableStateFlow(MockData.curated)
+    private val landmarks = MutableStateFlow(MockData.landmarks)
 
     private val userName: String =
         authRepository.currentUser?.displayName?.takeIf { it.isNotBlank() } ?: "Explorer"
 
     val uiState: StateFlow<HomeUiState> =
-        combine(query, tripRepository.trips, curated) { q, trips, curatedList ->
+        combine(query, tripRepository.trips, curated, landmarks) { q, trips, curatedList, landmarkList ->
             HomeUiState(
                 isLoading = false,
                 userName = userName,
                 query = q,
                 trips = trips,
                 curated = curatedList,
-                nearbyLandmarks = MockData.landmarks,
+                nearbyLandmarks = landmarkList,
                 categories = MockData.categories,
             )
         }.stateIn(
@@ -46,6 +50,18 @@ class HomeViewModel @Inject constructor(
             started = SharingStarted.WhileSubscribed(5_000),
             initialValue = HomeUiState(isLoading = true, userName = userName),
         )
+
+    init {
+        loadLandmarkImages()
+    }
+
+    private fun loadLandmarkImages() {
+        viewModelScope.launch {
+            landmarks.value = MockData.landmarks.map { landmark ->
+                landmark.copy(imageUrl = placeImageRepository.resolve(landmark.name, landmark.category).url)
+            }
+        }
+    }
 
     fun onQueryChange(value: String) {
         query.value = value
