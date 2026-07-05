@@ -39,6 +39,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.dotkios.ulaaa.data.model.FriendLocation
 import com.dotkios.ulaaa.data.model.GeoPoint
 import com.dotkios.ulaaa.data.model.Landmark
 import com.dotkios.ulaaa.ui.components.AppButton
@@ -52,6 +53,14 @@ import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.Style
+import org.maplibre.android.style.expressions.Expression
+import org.maplibre.android.style.layers.CircleLayer
+import org.maplibre.android.style.layers.PropertyFactory
+import org.maplibre.android.style.layers.SymbolLayer
+import org.maplibre.android.style.sources.GeoJsonSource
+import org.maplibre.geojson.Feature
+import org.maplibre.geojson.FeatureCollection
+import org.maplibre.geojson.Point
 
 private const val OLA_STYLE_URL =
     "https://api.olamaps.io/tiles/vector/v1/styles/default-light-standard/style.json"
@@ -74,7 +83,12 @@ fun MapScreen(viewModel: MapViewModel = hiltViewModel()) {
     var selected by remember { mutableStateOf<Landmark?>(null) }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        OlaMap(location = state.location, modifier = Modifier.fillMaxSize())
+        OlaMap(
+            location = state.location,
+            landmarks = state.landmarks,
+            friends = state.friends,
+            modifier = Modifier.fillMaxSize(),
+        )
 
         if (state.isLoading) {
             CircularProgressIndicator(
@@ -180,18 +194,30 @@ private fun LandmarkDetailDialog(landmark: Landmark, onDismiss: () -> Unit) {
     }
 }
 
+private const val SOURCE_PLACES = "places-src"
+private const val SOURCE_FRIENDS = "friends-src"
+
 @Composable
-private fun OlaMap(location: GeoPoint?, modifier: Modifier = Modifier) {
+private fun OlaMap(
+    location: GeoPoint?,
+    landmarks: List<Landmark>,
+    friends: List<FriendLocation>,
+    modifier: Modifier = Modifier,
+) {
     val mapView = rememberMapViewWithLifecycle()
     var map by remember { mutableStateOf<MapLibreMap?>(null) }
+    var style by remember { mutableStateOf<Style?>(null) }
 
     AndroidView(
         modifier = modifier,
         factory = {
             mapView.apply {
                 getMapAsync { libreMap ->
-                    libreMap.setStyle(Style.Builder().fromUri(OLA_STYLE_URL))
-                    map = libreMap
+                    libreMap.setStyle(Style.Builder().fromUri(OLA_STYLE_URL)) { loaded ->
+                        setupMarkerLayers(loaded)
+                        map = libreMap
+                        style = loaded
+                    }
                 }
             }
         },
@@ -202,9 +228,77 @@ private fun OlaMap(location: GeoPoint?, modifier: Modifier = Modifier) {
         val point = location ?: return@LaunchedEffect
         libreMap.cameraPosition = CameraPosition.Builder()
             .target(LatLng(point.lat, point.lon))
-            .zoom(14.0)
+            .zoom(13.5)
             .build()
     }
+
+    LaunchedEffect(landmarks, style) {
+        val loaded = style ?: return@LaunchedEffect
+        val features = landmarks.mapNotNull { lm ->
+            val lat = lm.lat ?: return@mapNotNull null
+            val lon = lm.lon ?: return@mapNotNull null
+            Feature.fromGeometry(Point.fromLngLat(lon, lat)).apply { addStringProperty("title", lm.name) }
+        }
+        (loaded.getSource(SOURCE_PLACES) as? GeoJsonSource)?.setGeoJson(FeatureCollection.fromFeatures(features))
+    }
+
+    LaunchedEffect(friends, style) {
+        val loaded = style ?: return@LaunchedEffect
+        val features = friends.map { f ->
+            Feature.fromGeometry(Point.fromLngLat(f.lon, f.lat)).apply { addStringProperty("title", f.name) }
+        }
+        (loaded.getSource(SOURCE_FRIENDS) as? GeoJsonSource)?.setGeoJson(FeatureCollection.fromFeatures(features))
+    }
+}
+
+/** Adds empty GeoJSON sources + circle/label layers for landmark and friend pins. */
+private fun setupMarkerLayers(style: Style) {
+    val teal = 0xFF0E7C7B.toInt()
+    val coral = 0xFFFF6F5E.toInt()
+    val white = 0xFFFFFFFF.toInt()
+    val dark = 0xFF15201F.toInt()
+
+    style.addSource(GeoJsonSource(SOURCE_PLACES))
+    style.addLayer(
+        CircleLayer("places-circle", SOURCE_PLACES).withProperties(
+            PropertyFactory.circleColor(teal),
+            PropertyFactory.circleRadius(7f),
+            PropertyFactory.circleStrokeColor(white),
+            PropertyFactory.circleStrokeWidth(2f),
+        ),
+    )
+    style.addLayer(
+        SymbolLayer("places-label", SOURCE_PLACES).withProperties(
+            PropertyFactory.textField(Expression.get("title")),
+            PropertyFactory.textSize(11f),
+            PropertyFactory.textColor(dark),
+            PropertyFactory.textHaloColor(white),
+            PropertyFactory.textHaloWidth(1.2f),
+            PropertyFactory.textOffset(arrayOf(0f, 1.4f)),
+            PropertyFactory.textAllowOverlap(false),
+        ),
+    )
+
+    style.addSource(GeoJsonSource(SOURCE_FRIENDS))
+    style.addLayer(
+        CircleLayer("friends-circle", SOURCE_FRIENDS).withProperties(
+            PropertyFactory.circleColor(coral),
+            PropertyFactory.circleRadius(9f),
+            PropertyFactory.circleStrokeColor(white),
+            PropertyFactory.circleStrokeWidth(3f),
+        ),
+    )
+    style.addLayer(
+        SymbolLayer("friends-label", SOURCE_FRIENDS).withProperties(
+            PropertyFactory.textField(Expression.get("title")),
+            PropertyFactory.textSize(11f),
+            PropertyFactory.textColor(coral),
+            PropertyFactory.textHaloColor(white),
+            PropertyFactory.textHaloWidth(1.2f),
+            PropertyFactory.textOffset(arrayOf(0f, -1.6f)),
+            PropertyFactory.textAllowOverlap(true),
+        ),
+    )
 }
 
 @Composable

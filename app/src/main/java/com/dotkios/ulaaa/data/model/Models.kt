@@ -24,6 +24,8 @@ data class Landmark(
     val accent: Color,
     val imageUrl: String? = null,
     val description: String? = null,
+    val lat: Double? = null,
+    val lon: Double? = null,
 )
 
 /** A curated itinerary surfaced in the "Curated For You" rail. */

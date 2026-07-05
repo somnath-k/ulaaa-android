@@ -43,6 +43,8 @@ class PlacesRepositoryImpl @Inject constructor(
                     distanceKm = ((props.distance ?: 0) / 100).toDouble() / 10.0,
                     rating = 0.0, // Geoapify has no rating; card hides it when 0.
                     accent = PALETTE[index % PALETTE.size],
+                    lat = props.lat,
+                    lon = props.lon,
                 )
             }
 
