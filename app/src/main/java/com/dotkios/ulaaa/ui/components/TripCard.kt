@@ -37,6 +37,7 @@ fun TripCard(
     ) {
         CardImage(
             keywords = trip.destination,
+            seed = trip.id,
             accent = trip.accent,
             scrim = true,
             modifier = Modifier

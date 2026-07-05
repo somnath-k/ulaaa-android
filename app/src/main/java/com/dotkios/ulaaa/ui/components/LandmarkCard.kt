@@ -42,7 +42,8 @@ fun LandmarkCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
     ) {
         CardImage(
-            keywords = "${landmark.name} ${landmark.category}",
+            keywords = landmark.category,
+            seed = landmark.id,
             accent = landmark.accent,
             modifier = Modifier
                 .fillMaxWidth()

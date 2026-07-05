@@ -24,6 +24,7 @@ fun CardImage(
     keywords: String,
     accent: Color,
     modifier: Modifier = Modifier,
+    seed: String = keywords,
     scrim: Boolean = false,
     content: @Composable BoxScope.() -> Unit = {},
 ) {
@@ -35,7 +36,7 @@ fun CardImage(
         )
         AsyncImage(
             model = ImageRequest.Builder(LocalContext.current)
-                .data(destinationImageUrl(keywords))
+                .data(destinationImageUrl(keywords, seed))
                 .crossfade(true)
                 .build(),
             contentDescription = null,
