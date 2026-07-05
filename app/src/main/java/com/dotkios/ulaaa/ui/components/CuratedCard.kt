@@ -1,7 +1,5 @@
 package com.dotkios.ulaaa.ui.components
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -16,7 +14,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -36,19 +33,20 @@ fun CuratedCard(
         shape = MaterialTheme.shapes.large,
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
-        Box(
+        CardImage(
+            keywords = itinerary.title,
+            accent = itinerary.accent,
+            scrim = true,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(180.dp)
-                .clip(MaterialTheme.shapes.large)
-                .background(
-                    Brush.verticalGradient(
-                        listOf(itinerary.accent, itinerary.accent.copy(alpha = 0.65f)),
-                    ),
-                ),
-            contentAlignment = Alignment.BottomStart,
+                .clip(MaterialTheme.shapes.large),
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(16.dp),
+            ) {
                 Text(
                     text = itinerary.title,
                     style = MaterialTheme.typography.titleLarge,

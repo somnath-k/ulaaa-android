@@ -51,7 +51,7 @@ fun HomeScreen(
     onSeeAllTrips: () -> Unit,
     onCreateTrip: () -> Unit,
     onOpenMap: () -> Unit,
-    onOpenChat: () -> Unit,
+    onAskDot: (starterPrompt: String?) -> Unit,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -60,7 +60,7 @@ fun HomeScreen(
         onSeeAllTrips = onSeeAllTrips,
         onCreateTrip = onCreateTrip,
         onOpenMap = onOpenMap,
-        onOpenChat = onOpenChat,
+        onAskDot = onAskDot,
     )
 }
 
@@ -71,7 +71,7 @@ private fun HomeContent(
     onSeeAllTrips: () -> Unit,
     onCreateTrip: () -> Unit,
     onOpenMap: () -> Unit,
-    onOpenChat: () -> Unit,
+    onAskDot: (String?) -> Unit,
 ) {
     if (state.isLoading) {
         Column(
@@ -89,7 +89,7 @@ private fun HomeContent(
         contentPadding = PaddingValues(bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
-        item { HomeHeader(name = state.userName, onOpenChat = onOpenChat) }
+        item { HomeHeader(name = state.userName, onOpenChat = { onAskDot(null) }) }
 
         item {
             Section(
@@ -148,7 +148,15 @@ private fun HomeContent(
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     state.categories.forEach { category ->
-                        CategoryChip(category = category, onClick = {})
+                        CategoryChip(
+                            category = category,
+                            onClick = {
+                                onAskDot(
+                                    "Suggest the best ${category.label} destinations to visit in India. " +
+                                        "Give 5 with a one-line reason each.",
+                                )
+                            },
+                        )
                     }
                 }
             }

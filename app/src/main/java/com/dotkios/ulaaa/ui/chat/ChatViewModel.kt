@@ -1,5 +1,6 @@
 package com.dotkios.ulaaa.ui.chat
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dotkios.ulaaa.data.model.ChatMessage
@@ -22,11 +23,18 @@ data class ChatUiState(
 
 @HiltViewModel
 class ChatViewModel @Inject constructor(
+    savedStateHandle: SavedStateHandle,
     private val chatRepository: ChatRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ChatUiState())
     val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
+
+    init {
+        // Optional starter prompt (e.g. tapping a Home category) is auto-sent on open.
+        val starter = savedStateHandle.get<String>("prompt")?.trim()
+        if (!starter.isNullOrBlank()) send(starter)
+    }
 
     fun send(text: String) {
         val question = text.trim()

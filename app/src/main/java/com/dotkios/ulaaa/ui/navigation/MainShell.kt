@@ -1,5 +1,6 @@
 package com.dotkios.ulaaa.ui.navigation
 
+import android.net.Uri
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -55,7 +56,14 @@ fun MainShell(onSignOut: () -> Unit) {
                     onSeeAllTrips = { navController.selectTab(TopLevelDestination.TRIPS) },
                     onCreateTrip = { navController.navigate(ROUTE_TRIP_CREATE) },
                     onOpenMap = { navController.selectTab(TopLevelDestination.MAP) },
-                    onOpenChat = { navController.navigate(ROUTE_CHAT) },
+                    onAskDot = { prompt ->
+                        val route = if (prompt.isNullOrBlank()) {
+                            ROUTE_CHAT
+                        } else {
+                            "$ROUTE_CHAT?prompt=${Uri.encode(prompt)}"
+                        }
+                        navController.navigate(route)
+                    },
                 )
             }
             composable(TopLevelDestination.TRIPS.route) {
@@ -95,7 +103,16 @@ fun MainShell(onSignOut: () -> Unit) {
                     onBack = { navController.popBackStack() },
                 )
             }
-            composable(ROUTE_CHAT) {
+            composable(
+                route = "$ROUTE_CHAT?prompt={prompt}",
+                arguments = listOf(
+                    navArgument("prompt") {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    },
+                ),
+            ) {
                 ChatScreen(onBack = { navController.popBackStack() })
             }
             composable(ROUTE_FRIENDS) {

@@ -1,8 +1,6 @@
 package com.dotkios.ulaaa.ui.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -24,7 +22,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -44,16 +41,13 @@ fun LandmarkCard(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
     ) {
-        Box(
+        CardImage(
+            keywords = "${landmark.name} ${landmark.category}",
+            accent = landmark.accent,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(110.dp)
-                .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
-                .background(
-                    Brush.verticalGradient(
-                        listOf(landmark.accent, landmark.accent.copy(alpha = 0.55f)),
-                    ),
-                ),
+                .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
         )
         Column(modifier = Modifier.padding(12.dp)) {
             Text(
