@@ -44,6 +44,7 @@ fun LandmarkCard(
         CardImage(
             keywords = landmark.category,
             seed = landmark.id,
+            imageUrl = landmark.imageUrl,
             accent = landmark.accent,
             modifier = Modifier
                 .fillMaxWidth()

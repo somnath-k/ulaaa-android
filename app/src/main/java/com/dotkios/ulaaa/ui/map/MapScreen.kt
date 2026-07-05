@@ -5,17 +5,26 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Place
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -24,12 +33,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dotkios.ulaaa.data.model.GeoPoint
+import com.dotkios.ulaaa.data.model.Landmark
 import com.dotkios.ulaaa.ui.components.AppButton
+import com.dotkios.ulaaa.ui.components.CardImage
 import com.dotkios.ulaaa.ui.components.LandmarkCard
 import com.dotkios.ulaaa.ui.components.PlaceholderScreen
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
@@ -57,6 +70,8 @@ fun MapScreen(viewModel: MapViewModel = hiltViewModel()) {
         LocationPermissionPrompt(onGrant = { permission.launchPermissionRequest() })
         return
     }
+
+    var selected by remember { mutableStateOf<Landmark?>(null) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         OlaMap(location = state.location, modifier = Modifier.fillMaxSize())
@@ -106,8 +121,61 @@ fun MapScreen(viewModel: MapViewModel = hiltViewModel()) {
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     items(state.landmarks, key = { it.id }) { landmark ->
-                        LandmarkCard(landmark = landmark, onClick = {})
+                        LandmarkCard(landmark = landmark, onClick = { selected = landmark })
                     }
+                }
+            }
+        }
+    }
+
+    selected?.let { landmark ->
+        LandmarkDetailDialog(landmark = landmark, onDismiss = { selected = null })
+    }
+}
+
+@Composable
+private fun LandmarkDetailDialog(landmark: Landmark, onDismiss: () -> Unit) {
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        ) {
+            Column {
+                CardImage(
+                    keywords = landmark.category,
+                    seed = landmark.id,
+                    imageUrl = landmark.imageUrl,
+                    accent = landmark.accent,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(180.dp),
+                )
+                Column(modifier = Modifier.padding(20.dp)) {
+                    Text(
+                        text = landmark.name,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        text = "${landmark.category} · ${landmark.distanceKm} km away",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        text = landmark.description
+                            ?: "No description available for this place yet.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier
+                            .heightIn(max = 220.dp)
+                            .verticalScroll(rememberScrollState()),
+                    )
+                    TextButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.align(Alignment.End),
+                    ) { Text("Close") }
                 }
             }
         }

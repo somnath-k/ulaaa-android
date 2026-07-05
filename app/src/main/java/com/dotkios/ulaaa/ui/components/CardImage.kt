@@ -25,6 +25,7 @@ fun CardImage(
     accent: Color,
     modifier: Modifier = Modifier,
     seed: String = keywords,
+    imageUrl: String? = null,
     scrim: Boolean = false,
     content: @Composable BoxScope.() -> Unit = {},
 ) {
@@ -34,9 +35,10 @@ fun CardImage(
                 .fillMaxSize()
                 .background(Brush.verticalGradient(listOf(accent, accent.copy(alpha = 0.6f)))),
         )
+        val model = if (!imageUrl.isNullOrBlank()) imageUrl else destinationImageUrl(keywords, seed)
         AsyncImage(
             model = ImageRequest.Builder(LocalContext.current)
-                .data(destinationImageUrl(keywords, seed))
+                .data(model)
                 .crossfade(true)
                 .build(),
             contentDescription = null,

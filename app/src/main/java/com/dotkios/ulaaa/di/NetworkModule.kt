@@ -3,6 +3,8 @@ package com.dotkios.ulaaa.di
 import com.dotkios.ulaaa.BuildConfig
 import com.dotkios.ulaaa.data.remote.GeminiApi
 import com.dotkios.ulaaa.data.remote.GeoapifyApi
+import com.dotkios.ulaaa.data.remote.PexelsApi
+import com.dotkios.ulaaa.data.remote.WikipediaApi
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import dagger.Module
 import dagger.Provides
@@ -50,6 +52,16 @@ object NetworkModule {
     @Singleton
     fun provideGeminiApi(client: OkHttpClient, json: Json): GeminiApi =
         retrofit(GeminiApi.BASE_URL, client, json).create(GeminiApi::class.java)
+
+    @Provides
+    @Singleton
+    fun provideWikipediaApi(client: OkHttpClient, json: Json): WikipediaApi =
+        retrofit(WikipediaApi.BASE_URL, client, json).create(WikipediaApi::class.java)
+
+    @Provides
+    @Singleton
+    fun providePexelsApi(client: OkHttpClient, json: Json): PexelsApi =
+        retrofit(PexelsApi.BASE_URL, client, json).create(PexelsApi::class.java)
 
     private fun retrofit(baseUrl: String, client: OkHttpClient, json: Json): Retrofit {
         val contentType = "application/json".toMediaType()

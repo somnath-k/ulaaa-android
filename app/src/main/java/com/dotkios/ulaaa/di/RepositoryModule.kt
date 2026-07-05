@@ -10,6 +10,8 @@ import com.dotkios.ulaaa.data.repository.FriendRepository
 import com.dotkios.ulaaa.data.repository.FriendRepositoryImpl
 import com.dotkios.ulaaa.data.repository.ItineraryRepository
 import com.dotkios.ulaaa.data.repository.ItineraryRepositoryImpl
+import com.dotkios.ulaaa.data.repository.PlaceImageRepository
+import com.dotkios.ulaaa.data.repository.PlaceImageRepositoryImpl
 import com.dotkios.ulaaa.data.repository.PlacesRepository
 import com.dotkios.ulaaa.data.repository.PlacesRepositoryImpl
 import com.dotkios.ulaaa.data.repository.RecommendationRepository
@@ -43,6 +45,10 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindPlacesRepository(impl: PlacesRepositoryImpl): PlacesRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindPlaceImageRepository(impl: PlaceImageRepositoryImpl): PlaceImageRepository
 
     @Binds
     @Singleton

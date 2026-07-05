@@ -4,6 +4,9 @@ import androidx.compose.ui.graphics.Color
 import com.dotkios.ulaaa.BuildConfig
 import com.dotkios.ulaaa.data.model.Landmark
 import com.dotkios.ulaaa.data.remote.GeoapifyApi
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -14,6 +17,7 @@ interface PlacesRepository {
 @Singleton
 class PlacesRepositoryImpl @Inject constructor(
     private val api: GeoapifyApi,
+    private val placeImageRepository: PlaceImageRepository,
 ) : PlacesRepository {
 
     override suspend fun nearbyLandmarks(
@@ -28,7 +32,7 @@ class PlacesRepositoryImpl @Inject constructor(
             limit = 20,
             apiKey = BuildConfig.GEOAPIFY_API_KEY,
         )
-        response.features
+        val base = response.features
             .mapNotNull { it.properties }
             .filter { !it.name.isNullOrBlank() }
             .mapIndexed { index, props ->
@@ -41,6 +45,16 @@ class PlacesRepositoryImpl @Inject constructor(
                     accent = PALETTE[index % PALETTE.size],
                 )
             }
+
+        // Enrich each place with a real image + description (Wikipedia → Pexels), in parallel.
+        coroutineScope {
+            base.map { landmark ->
+                async {
+                    val image = placeImageRepository.resolve(landmark.name, landmark.category)
+                    landmark.copy(imageUrl = image.url, description = image.description)
+                }
+            }.awaitAll()
+        }
     }
 
     private fun String.prettyCategory(): String =

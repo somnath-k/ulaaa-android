@@ -21,6 +21,8 @@ data class Landmark(
     val distanceKm: Double,
     val rating: Double,
     val accent: Color,
+    val imageUrl: String? = null,
+    val description: String? = null,
 )
 
 /** A curated itinerary surfaced in the "Curated For You" rail. */

@@ -37,6 +37,7 @@ android {
         buildConfigField("String", "GEMINI_API_KEY", secret("GEMINI_API_KEY"))
         buildConfigField("String", "OLA_MAPS_API_KEY", secret("OLA_MAPS_API_KEY"))
         buildConfigField("String", "GEOAPIFY_API_KEY", secret("GEOAPIFY_API_KEY"))
+        buildConfigField("String", "PEXELS_API_KEY", secret("PEXELS_API_KEY"))
     }
 
     buildTypes {
