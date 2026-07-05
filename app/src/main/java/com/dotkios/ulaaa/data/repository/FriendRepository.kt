@@ -20,6 +20,8 @@ interface FriendRepository {
     fun incomingRequests(): Flow<List<FriendRequest>>
     suspend fun searchByEmail(email: String): Result<UserProfile?>
     suspend fun findByPhone(normalizedPhone: String): Result<UserProfile?>
+    /** Maps normalized phone -> Ulaaa user, for the phones that belong to a registered user. */
+    suspend fun findUsersByPhones(normalizedPhones: List<String>): Result<Map<String, UserProfile>>
     suspend fun sendRequest(to: UserProfile): Result<Unit>
     suspend fun acceptRequest(request: FriendRequest): Result<Unit>
     suspend fun declineRequest(fromUid: String): Result<Unit>
@@ -81,6 +83,22 @@ class FriendRepositoryImpl @Inject constructor(
         val snapshot = users.whereEqualTo("phone", normalizedPhone).limit(1).get().await()
         val profile = snapshot.documents.firstOrNull()?.toObject(UserProfile::class.java)
         profile?.takeIf { it.uid != me()?.uid }
+    }
+
+    override suspend fun findUsersByPhones(normalizedPhones: List<String>): Result<Map<String, UserProfile>> = runCatching {
+        val myUid = me()?.uid
+        val result = HashMap<String, UserProfile>()
+        normalizedPhones.filter { it.isNotBlank() }.distinct().chunked(10).forEach { chunk ->
+            // Firestore whereIn accepts up to 10 values per query.
+            val snapshot = users.whereIn("phone", chunk).get().await()
+            snapshot.documents.forEach { doc ->
+                val profile = doc.toObject(UserProfile::class.java)
+                if (profile != null && profile.phone.isNotBlank() && profile.uid != myUid) {
+                    result[profile.phone] = profile
+                }
+            }
+        }
+        result
     }
 
     override suspend fun sendRequest(to: UserProfile): Result<Unit> = runCatching {

@@ -17,6 +17,7 @@ import androidx.navigation.navArgument
 import com.dotkios.ulaaa.ui.bucketlist.BucketListScreen
 import com.dotkios.ulaaa.ui.chat.ChatScreen
 import com.dotkios.ulaaa.ui.friends.FriendsScreen
+import com.dotkios.ulaaa.ui.friends.InviteContactsScreen
 import com.dotkios.ulaaa.ui.home.HomeScreen
 import com.dotkios.ulaaa.ui.map.MapScreen
 import com.dotkios.ulaaa.ui.profile.ProfileScreen
@@ -30,6 +31,7 @@ private const val ROUTE_CHAT = "chat"
 private const val ROUTE_TRIP_DETAIL = "trip_detail"
 private const val ROUTE_TRIP_CHAT = "trip_chat"
 private const val ROUTE_FRIENDS = "friends"
+private const val ROUTE_INVITE_CONTACTS = "invite_contacts"
 
 /** Authenticated shell: bottom-nav Scaffold hosting the top-level destinations. */
 @Composable
@@ -116,7 +118,13 @@ fun MainShell(onSignOut: () -> Unit) {
                 ChatScreen(onBack = { navController.popBackStack() })
             }
             composable(ROUTE_FRIENDS) {
-                FriendsScreen(onBack = { navController.popBackStack() })
+                FriendsScreen(
+                    onBack = { navController.popBackStack() },
+                    onOpenInviteContacts = { navController.navigate(ROUTE_INVITE_CONTACTS) },
+                )
+            }
+            composable(ROUTE_INVITE_CONTACTS) {
+                InviteContactsScreen(onBack = { navController.popBackStack() })
             }
         }
     }

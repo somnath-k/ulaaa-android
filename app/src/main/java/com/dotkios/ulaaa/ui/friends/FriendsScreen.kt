@@ -1,12 +1,6 @@
 package com.dotkios.ulaaa.ui.friends
 
-import android.app.Activity
-import android.content.Context
 import android.content.Intent
-import android.net.Uri
-import android.provider.ContactsContract
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContract
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -40,7 +34,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -60,6 +53,7 @@ import com.dotkios.ulaaa.data.model.UserProfile
 @Composable
 fun FriendsScreen(
     onBack: () -> Unit,
+    onOpenInviteContacts: () -> Unit,
     viewModel: FriendsViewModel = hiltViewModel(),
 ) {
     val friends by viewModel.friends.collectAsStateWithLifecycle()
@@ -67,24 +61,6 @@ fun FriendsScreen(
     val search by viewModel.search.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var email by remember { mutableStateOf("") }
-    val smsInvite by viewModel.smsInvite.collectAsStateWithLifecycle()
-
-    // System phone-number picker — one-time access to the chosen contact, no permission needed.
-    val pickContact = rememberLauncherForActivityResult(PickPhoneNumberContract()) { uri ->
-        val number = uri?.let { readContactNumber(context, it) }
-        if (number != null) viewModel.onContactPicked(number)
-    }
-
-    // If the picked contact isn't a Ulaaa user, fall back to an SMS invite.
-    LaunchedEffect(smsInvite) {
-        val number = smsInvite ?: return@LaunchedEffect
-        context.startActivity(
-            Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:$number")).apply {
-                putExtra("sms_body", "Join me on Ulaaa — let's plan a trip together! 🌍")
-            },
-        )
-        viewModel.consumeSmsInvite()
-    }
 
     Scaffold(
         topBar = {
@@ -133,11 +109,11 @@ fun FriendsScreen(
 
             item {
                 FilledTonalButton(
-                    onClick = { pickContact.launch(Unit) },
+                    onClick = onOpenInviteContacts,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Icon(Icons.Outlined.Contacts, contentDescription = null)
-                    Text("Invite from contacts", modifier = Modifier.padding(start = 8.dp))
+                    Text("Sync contacts", modifier = Modifier.padding(start = 8.dp))
                 }
             }
 
@@ -280,23 +256,6 @@ private fun FriendRow(friend: Friend, onRemove: () -> Unit) {
             TextButton(onClick = onRemove) { Text("Remove") }
         }
     }
-}
-
-/** Picks a single phone number from contacts. Grants one-time access to just that row. */
-private class PickPhoneNumberContract : ActivityResultContract<Unit, Uri?>() {
-    override fun createIntent(context: Context, input: Unit): Intent =
-        Intent(Intent.ACTION_PICK).apply { type = ContactsContract.CommonDataKinds.Phone.CONTENT_TYPE }
-
-    override fun parseResult(resultCode: Int, intent: Intent?): Uri? =
-        if (resultCode == Activity.RESULT_OK) intent?.data else null
-}
-
-private fun readContactNumber(context: Context, uri: Uri): String? {
-    val projection = arrayOf(ContactsContract.CommonDataKinds.Phone.NUMBER)
-    context.contentResolver.query(uri, projection, null, null, null)?.use { cursor ->
-        if (cursor.moveToFirst()) return cursor.getString(0)
-    }
-    return null
 }
 
 @Composable

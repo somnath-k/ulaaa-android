@@ -9,7 +9,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.dotkios.ulaaa.util.destinationImageUrl
 
 /**
@@ -32,7 +34,10 @@ fun CardImage(
                 .background(Brush.verticalGradient(listOf(accent, accent.copy(alpha = 0.6f)))),
         )
         AsyncImage(
-            model = destinationImageUrl(keywords),
+            model = ImageRequest.Builder(LocalContext.current)
+                .data(destinationImageUrl(keywords))
+                .crossfade(true)
+                .build(),
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize(),
