@@ -9,7 +9,6 @@ import com.dotkios.ulaaa.data.remote.dto.GeminiPart
 import com.dotkios.ulaaa.data.remote.dto.GeminiRequest
 import com.dotkios.ulaaa.data.remote.dto.ItineraryStopSuggestion
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.Query
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -37,25 +36,24 @@ class ItineraryRepositoryImpl @Inject constructor(
         firestore.collection("trips").document(tripId).collection("itinerary")
 
     override fun observe(tripId: String): Flow<List<ItineraryStop>> = callbackFlow {
-        val registration = itineraryCol(tripId)
-            .orderBy("day", Query.Direction.ASCENDING)
-            .orderBy("orderIndex", Query.Direction.ASCENDING)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    trySend(emptyList())
-                    return@addSnapshotListener
-                }
-                val stops = snapshot?.documents?.map { doc ->
-                    ItineraryStop(
-                        id = doc.id,
-                        day = (doc.getLong("day") ?: 1L).toInt(),
-                        title = doc.getString("title").orEmpty(),
-                        detail = doc.getString("detail").orEmpty(),
-                        cost = (doc.getLong("cost") ?: 0L).toInt(),
-                    )
-                }.orEmpty()
-                trySend(stops)
+        // No multi-field orderBy (that needs a composite index) — sort client-side instead.
+        val registration = itineraryCol(tripId).addSnapshotListener { snapshot, error ->
+            if (error != null) {
+                trySend(emptyList())
+                return@addSnapshotListener
             }
+            val stops = snapshot?.documents.orEmpty().map { doc ->
+                val order = doc.getLong("orderIndex") ?: 0L
+                order to ItineraryStop(
+                    id = doc.id,
+                    day = (doc.getLong("day") ?: 1L).toInt(),
+                    title = doc.getString("title").orEmpty(),
+                    detail = doc.getString("detail").orEmpty(),
+                    cost = (doc.getLong("cost") ?: 0L).toInt(),
+                )
+            }.sortedWith(compareBy({ it.second.day }, { it.first })).map { it.second }
+            trySend(stops)
+        }
         awaitClose { registration.remove() }
     }
 
