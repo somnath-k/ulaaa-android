@@ -3,6 +3,7 @@ package com.dotkios.ulaaa.data.repository
 import com.dotkios.ulaaa.data.model.UserProfile
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.userProfileChangeRequest
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -16,6 +17,7 @@ interface AuthRepository {
     fun authState(): Flow<FirebaseUser?>
     suspend fun signIn(email: String, password: String): Result<FirebaseUser>
     suspend fun signUp(name: String, email: String, password: String): Result<FirebaseUser>
+    suspend fun signInWithGoogle(idToken: String): Result<FirebaseUser>
     fun signOut()
 }
 
@@ -48,6 +50,22 @@ class AuthRepositoryImpl @Inject constructor(
                 uid = user.uid,
                 name = name.trim(),
                 email = email.trim(),
+                createdAt = System.currentTimeMillis(),
+            ),
+        )
+        user
+    }
+
+    override suspend fun signInWithGoogle(idToken: String): Result<FirebaseUser> = runCatching {
+        val credential = GoogleAuthProvider.getCredential(idToken, null)
+        val result = auth.signInWithCredential(credential).await()
+        val user = result.user ?: error("Google sign-in returned no user")
+        // Best-effort profile write so the user is searchable/friendable.
+        userRepository.createProfile(
+            UserProfile(
+                uid = user.uid,
+                name = user.displayName.orEmpty(),
+                email = user.email.orEmpty(),
                 createdAt = System.currentTimeMillis(),
             ),
         )

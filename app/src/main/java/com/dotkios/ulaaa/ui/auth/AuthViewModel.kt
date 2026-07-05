@@ -57,6 +57,19 @@ class AuthViewModel @Inject constructor(
         }
     }
 
+    fun signInWithGoogle(idToken: String) {
+        _uiState.update { it.copy(isLoading = true, error = null) }
+        viewModelScope.launch {
+            authRepository.signInWithGoogle(idToken)
+                .onSuccess { _uiState.update { s -> s.copy(isLoading = false, isAuthenticated = true) } }
+                .onFailure { e -> _uiState.update { s -> s.copy(isLoading = false, error = e.friendly()) } }
+        }
+    }
+
+    fun onGoogleError(message: String) {
+        _uiState.update { it.copy(isLoading = false, error = message) }
+    }
+
     private fun validate(email: String, password: String): String? = when {
         email.isBlank() -> "Enter your email"
         !EMAIL_REGEX.matches(email.trim()) -> "Enter a valid email"

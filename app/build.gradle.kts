@@ -38,6 +38,7 @@ android {
         buildConfigField("String", "OLA_MAPS_API_KEY", secret("OLA_MAPS_API_KEY"))
         buildConfigField("String", "GEOAPIFY_API_KEY", secret("GEOAPIFY_API_KEY"))
         buildConfigField("String", "PEXELS_API_KEY", secret("PEXELS_API_KEY"))
+        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", secret("GOOGLE_WEB_CLIENT_ID"))
     }
 
     buildTypes {
@@ -74,6 +75,11 @@ dependencies {
     implementation(libs.play.services.location)
     implementation(libs.maplibre.android)
     implementation(libs.accompanist.permissions)
+
+    // Google Sign-In (Credential Manager)
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services)
+    implementation(libs.google.id)
 
     // Core / lifecycle
     implementation(libs.material)

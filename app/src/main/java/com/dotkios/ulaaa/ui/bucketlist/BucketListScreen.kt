@@ -14,19 +14,23 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.Bookmark
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -42,47 +46,57 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dotkios.ulaaa.data.model.BucketItem
 import com.dotkios.ulaaa.ui.components.PlaceholderScreen
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BucketListScreen(viewModel: BucketViewModel = hiltViewModel()) {
+fun BucketListScreen(
+    onBack: () -> Unit,
+    viewModel: BucketViewModel = hiltViewModel(),
+) {
     val items by viewModel.items.collectAsStateWithLifecycle()
     var showAdd by remember { mutableStateOf(false) }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        if (items.isEmpty()) {
-            PlaceholderScreen(
-                title = "Your bucket list",
-                subtitle = "Tap + to save destinations you dream of visiting.",
-                icon = Icons.Outlined.Bookmark,
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Bucket List") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
             )
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(20.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { showAdd = true },
+                containerColor = MaterialTheme.colorScheme.primary,
             ) {
-                item {
-                    Text(
-                        text = "Bucket List",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground,
-                        modifier = Modifier.padding(bottom = 4.dp),
-                    )
-                }
-                items(items, key = { it.id }) { item ->
-                    BucketRow(item = item, onDelete = { viewModel.remove(item.id) })
+                Icon(Icons.Filled.Add, contentDescription = "Add destination")
+            }
+        },
+    ) { padding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
+        ) {
+            if (items.isEmpty()) {
+                PlaceholderScreen(
+                    title = "Your bucket list",
+                    subtitle = "Tap + to save destinations you dream of visiting.",
+                    icon = Icons.Outlined.Bookmark,
+                )
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    items(items, key = { it.id }) { item ->
+                        BucketRow(item = item, onDelete = { viewModel.remove(item.id) })
+                    }
                 }
             }
-        }
-
-        FloatingActionButton(
-            onClick = { showAdd = true },
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(24.dp),
-            containerColor = MaterialTheme.colorScheme.primary,
-        ) {
-            Icon(Icons.Filled.Add, contentDescription = "Add destination")
         }
     }
 

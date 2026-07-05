@@ -32,6 +32,7 @@ private const val ROUTE_TRIP_DETAIL = "trip_detail"
 private const val ROUTE_TRIP_CHAT = "trip_chat"
 private const val ROUTE_FRIENDS = "friends"
 private const val ROUTE_INVITE_CONTACTS = "invite_contacts"
+private const val ROUTE_BUCKET_LIST = "bucketlist"
 
 /** Authenticated shell: bottom-nav Scaffold hosting the top-level destinations. */
 @Composable
@@ -75,12 +76,15 @@ fun MainShell(onSignOut: () -> Unit) {
                 )
             }
             composable(TopLevelDestination.MAP.route) { MapScreen() }
-            composable(TopLevelDestination.BUCKET_LIST.route) { BucketListScreen() }
             composable(TopLevelDestination.PROFILE.route) {
                 ProfileScreen(
                     onSignOut = onSignOut,
                     onOpenFriends = { navController.navigate(ROUTE_FRIENDS) },
+                    onOpenBucketList = { navController.navigate(ROUTE_BUCKET_LIST) },
                 )
+            }
+            composable(ROUTE_BUCKET_LIST) {
+                BucketListScreen(onBack = { navController.popBackStack() })
             }
 
             composable(

@@ -25,6 +25,7 @@ private class FakeAuthRepository(
         return result
     }
     override suspend fun signUp(name: String, email: String, password: String): Result<FirebaseUser> = result
+    override suspend fun signInWithGoogle(idToken: String): Result<FirebaseUser> = result
     override fun signOut() = Unit
 }
 

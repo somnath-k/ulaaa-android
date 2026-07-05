@@ -37,6 +37,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 fun ProfileScreen(
     onSignOut: () -> Unit,
     onOpenFriends: () -> Unit,
+    onOpenBucketList: () -> Unit,
     viewModel: ProfileViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -92,6 +93,8 @@ fun ProfileScreen(
 
         Spacer(Modifier.height(28.dp))
         Button(onClick = onOpenFriends) { Text("Friends") }
+        Spacer(Modifier.height(12.dp))
+        OutlinedButton(onClick = onOpenBucketList) { Text("Bucket List") }
         Spacer(Modifier.height(12.dp))
         OutlinedButton(
             onClick = {
