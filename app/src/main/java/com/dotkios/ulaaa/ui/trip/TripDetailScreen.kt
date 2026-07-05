@@ -103,6 +103,8 @@ fun TripDetailScreen(
                 isGenerating = state.isGeneratingItinerary,
                 error = state.itineraryError,
                 onGenerate = viewModel::generateItinerary,
+                onAddStop = viewModel::addItineraryStop,
+                onDeleteStop = viewModel::deleteItineraryStop,
                 onClear = viewModel::clearItinerary,
             )
 
@@ -222,17 +224,26 @@ private fun FriendPickerDialog(
     )
 }
 
+private fun rupees(value: Int): String = "₹%,d".format(value)
+
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ItinerarySection(
     stops: List<ItineraryStop>,
     isGenerating: Boolean,
     error: String?,
     onGenerate: () -> Unit,
+    onAddStop: (day: Int, title: String, detail: String, cost: Int) -> Unit,
+    onDeleteStop: (String) -> Unit,
     onClear: () -> Unit,
 ) {
+    var showAdd by remember { mutableStateOf(false) }
+    val maxDay = stops.maxOfOrNull { it.day } ?: 0
+    val totalBudget = stops.sumOf { it.cost }
+
     SectionCard(title = "Itinerary") {
-        when {
-            isGenerating -> Row(verticalAlignment = Alignment.CenterVertically) {
+        if (isGenerating) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
                 Text(
                     "Dot is planning your trip…",
@@ -240,23 +251,48 @@ private fun ItinerarySection(
                     modifier = Modifier.padding(start = 12.dp),
                 )
             }
+        }
 
-            stops.isEmpty() -> Text(
-                "No itinerary yet. Let Dot draft a day-by-day plan.",
+        if (!isGenerating && stops.isEmpty()) {
+            Text(
+                "No itinerary yet. Let Dot draft a plan with a budget, or add stops yourself.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+        }
 
-            else -> {
-                stops.groupBy { it.day }.toSortedMap().forEach { (day, dayStops) ->
+        if (stops.isNotEmpty()) {
+            if (totalBudget > 0) {
+                Text(
+                    "Estimated budget · ${rupees(totalBudget)} / person",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+            stops.groupBy { it.day }.toSortedMap().forEach { (day, dayStops) ->
+                val daySum = dayStops.sumOf { it.cost }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
                     Text(
                         "Day $day",
-                        style = MaterialTheme.typography.labelLarge,
+                        style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.SemiBold,
                     )
-                    dayStops.forEach { stop ->
-                        Column(modifier = Modifier.padding(start = 8.dp, bottom = 6.dp)) {
+                    if (daySum > 0) {
+                        Text(
+                            rupees(daySum),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                dayStops.forEach { stop ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(modifier = Modifier.weight(1f).padding(start = 8.dp)) {
                             Text(stop.title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
                             if (stop.detail.isNotBlank()) {
                                 Text(
@@ -265,6 +301,20 @@ private fun ItinerarySection(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
+                        }
+                        if (stop.cost > 0) {
+                            Text(
+                                rupees(stop.cost),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        IconButton(onClick = { onDeleteStop(stop.id) }) {
+                            Icon(
+                                Icons.Outlined.Delete,
+                                contentDescription = "Remove stop",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
                         }
                     }
                 }
@@ -276,16 +326,96 @@ private fun ItinerarySection(
         }
 
         if (!isGenerating) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = onGenerate) {
                     Text(if (stops.isEmpty()) "Generate with AI" else "Regenerate")
                 }
+                AssistChip(
+                    onClick = { showAdd = true },
+                    label = { Text("Add stop") },
+                    leadingIcon = { Icon(Icons.Filled.Add, contentDescription = null) },
+                )
                 if (stops.isNotEmpty()) {
                     TextButton(onClick = onClear) { Text("Clear") }
                 }
             }
         }
     }
+
+    if (showAdd) {
+        AddStopDialog(
+            suggestedDay = maxDay.coerceAtLeast(1),
+            maxDay = maxDay,
+            onDismiss = { showAdd = false },
+            onConfirm = { day, title, detail, cost ->
+                onAddStop(day, title, detail, cost)
+                showAdd = false
+            },
+        )
+    }
+}
+
+@Composable
+private fun AddStopDialog(
+    suggestedDay: Int,
+    maxDay: Int,
+    onDismiss: () -> Unit,
+    onConfirm: (day: Int, title: String, detail: String, cost: Int) -> Unit,
+) {
+    var dayText by remember { mutableStateOf(suggestedDay.toString()) }
+    var title by remember { mutableStateOf("") }
+    var detail by remember { mutableStateOf("") }
+    var costText by remember { mutableStateOf("") }
+    val day = dayText.toIntOrNull() ?: suggestedDay
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Add stop") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                OutlinedTextField(
+                    value = dayText,
+                    onValueChange = { dayText = it.filter(Char::isDigit).take(2) },
+                    label = { Text("Day") },
+                    supportingText = { Text("Use day ${maxDay + 1} to start a new day") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text("Place or activity") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = detail,
+                    onValueChange = { detail = it },
+                    label = { Text("Note (optional)") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = costText,
+                    onValueChange = { costText = it.filter(Char::isDigit).take(7) },
+                    label = { Text("Cost ₹ (optional)") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    onConfirm(day.coerceAtLeast(1), title, detail, costText.toIntOrNull() ?: 0)
+                },
+                enabled = title.isNotBlank(),
+            ) { Text("Add") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
 }
 
 @Composable

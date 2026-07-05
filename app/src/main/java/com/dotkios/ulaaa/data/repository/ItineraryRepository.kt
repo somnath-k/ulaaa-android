@@ -21,6 +21,8 @@ import javax.inject.Singleton
 interface ItineraryRepository {
     fun observe(tripId: String): Flow<List<ItineraryStop>>
     suspend fun generate(tripId: String, destination: String, days: Int): Result<Unit>
+    suspend fun addStop(tripId: String, day: Int, title: String, detail: String, cost: Int): Result<Unit>
+    suspend fun deleteStop(tripId: String, stopId: String): Result<Unit>
     suspend fun clear(tripId: String): Result<Unit>
 }
 
@@ -49,6 +51,7 @@ class ItineraryRepositoryImpl @Inject constructor(
                         day = (doc.getLong("day") ?: 1L).toInt(),
                         title = doc.getString("title").orEmpty(),
                         detail = doc.getString("detail").orEmpty(),
+                        cost = (doc.getLong("cost") ?: 0L).toInt(),
                     )
                 }.orEmpty()
                 trySend(stops)
@@ -62,7 +65,8 @@ class ItineraryRepositoryImpl @Inject constructor(
             append("Build a $dayCount-day travel itinerary for $destination. ")
             append("Give 2-3 stops per day. Respond ONLY with a JSON array where each element has: ")
             append("\"day\" (integer starting at 1), \"title\" (a place or activity, max 5 words), ")
-            append("\"detail\" (one short sentence).")
+            append("\"detail\" (one short sentence), and ")
+            append("\"cost\" (approximate per-person cost in Indian Rupees as an integer, 0 if free).")
         }
         val response = api.generate(
             model = GeminiApi.MODEL,
@@ -86,11 +90,36 @@ class ItineraryRepositoryImpl @Inject constructor(
                     "day" to s.day,
                     "title" to s.title,
                     "detail" to s.detail,
+                    "cost" to s.cost,
                     "orderIndex" to index,
                 ),
             )
         }
         batch.commit().await()
+    }
+
+    override suspend fun addStop(
+        tripId: String,
+        day: Int,
+        title: String,
+        detail: String,
+        cost: Int,
+    ): Result<Unit> = runCatching {
+        if (title.isBlank()) return@runCatching
+        itineraryCol(tripId).add(
+            mapOf(
+                "day" to day.coerceAtLeast(1),
+                "title" to title.trim(),
+                "detail" to detail.trim(),
+                "cost" to cost.coerceAtLeast(0),
+                // Large orderIndex so manual stops append after AI-generated ones within a day.
+                "orderIndex" to ((System.currentTimeMillis() / 1000L) - 1_700_000_000L).toInt(),
+            ),
+        ).await()
+    }
+
+    override suspend fun deleteStop(tripId: String, stopId: String): Result<Unit> = runCatching {
+        itineraryCol(tripId).document(stopId).delete().await()
     }
 
     override suspend fun clear(tripId: String): Result<Unit> = runCatching {

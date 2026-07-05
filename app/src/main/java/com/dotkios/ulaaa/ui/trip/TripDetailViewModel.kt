@@ -111,6 +111,11 @@ class TripDetailViewModel @Inject constructor(
         }
     }
 
+    fun addItineraryStop(day: Int, title: String, detail: String, cost: Int) =
+        launch { itineraryRepository.addStop(tripId, day, title, detail, cost) }
+
+    fun deleteItineraryStop(id: String) = launch { itineraryRepository.deleteStop(tripId, id) }
+
     fun clearItinerary() = launch { itineraryRepository.clear(tripId) }
 
     private fun launch(block: suspend () -> Unit) {
