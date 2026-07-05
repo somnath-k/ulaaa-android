@@ -24,6 +24,8 @@ data class ItineraryStop(
     val day: Int,
     val title: String,
     val detail: String,
+    /** Approximate per-person cost in INR (0 if unknown). */
+    val cost: Int = 0,
 )
 
 /** One suggested transfer to settle up. */

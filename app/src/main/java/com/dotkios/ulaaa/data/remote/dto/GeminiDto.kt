@@ -50,4 +50,5 @@ data class ItineraryStopSuggestion(
     val day: Int,
     val title: String,
     val detail: String,
+    val cost: Int = 0,
 )
