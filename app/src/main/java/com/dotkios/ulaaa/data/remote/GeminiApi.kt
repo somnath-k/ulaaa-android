@@ -18,7 +18,7 @@ interface GeminiApi {
 
     companion object {
         const val BASE_URL = "https://generativelanguage.googleapis.com/"
-        // flash-lite has a much larger free-tier daily quota than 2.5-flash (only ~20/day).
-        const val MODEL = "gemini-2.5-flash-lite"
+        // flash-lite = large free-tier daily quota; 3.1 is newer + faster than 2.5.
+        const val MODEL = "gemini-3.1-flash-lite"
     }
 }
