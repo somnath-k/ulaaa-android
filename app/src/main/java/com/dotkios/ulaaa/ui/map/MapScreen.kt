@@ -142,8 +142,6 @@ private fun LandmarkDetailDialog(landmark: Landmark, onDismiss: () -> Unit) {
         ) {
             Column {
                 CardImage(
-                    keywords = landmark.category,
-                    seed = landmark.id,
                     imageUrl = landmark.imageUrl,
                     accent = landmark.accent,
                     modifier = Modifier

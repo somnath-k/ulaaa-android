@@ -36,9 +36,8 @@ fun TripCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         CardImage(
-            keywords = trip.destination,
-            seed = trip.id,
             accent = trip.accent,
+            imageUrl = trip.imageUrl,
             scrim = true,
             modifier = Modifier
                 .fillMaxWidth()

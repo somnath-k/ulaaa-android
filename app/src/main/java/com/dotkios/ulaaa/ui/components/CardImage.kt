@@ -12,19 +12,16 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.dotkios.ulaaa.util.destinationImageUrl
 
 /**
- * Card hero image: a real travel photo (by keyword) layered over the item's accent gradient,
- * which stays visible while the photo loads or if it fails. Optional bottom scrim keeps
- * overlaid text legible. [content] is drawn on top for captions/badges.
+ * Card hero: shows the real place photo ([imageUrl], e.g. from Wikipedia) when we have one,
+ * otherwise a clean brand gradient — never a random stock photo. Optional bottom [scrim] keeps
+ * overlaid text legible; [content] is drawn on top for captions/badges.
  */
 @Composable
 fun CardImage(
-    keywords: String,
     accent: Color,
     modifier: Modifier = Modifier,
-    seed: String = keywords,
     imageUrl: String? = null,
     scrim: Boolean = false,
     content: @Composable BoxScope.() -> Unit = {},
@@ -35,16 +32,17 @@ fun CardImage(
                 .fillMaxSize()
                 .background(Brush.verticalGradient(listOf(accent, accent.copy(alpha = 0.6f)))),
         )
-        val model = if (!imageUrl.isNullOrBlank()) imageUrl else destinationImageUrl(keywords, seed)
-        AsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(model)
-                .crossfade(true)
-                .build(),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize(),
-        )
+        if (!imageUrl.isNullOrBlank()) {
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(imageUrl)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
         if (scrim) {
             Box(
                 modifier = Modifier

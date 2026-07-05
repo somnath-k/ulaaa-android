@@ -42,8 +42,6 @@ fun LandmarkCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
     ) {
         CardImage(
-            keywords = landmark.category,
-            seed = landmark.id,
             imageUrl = landmark.imageUrl,
             accent = landmark.accent,
             modifier = Modifier

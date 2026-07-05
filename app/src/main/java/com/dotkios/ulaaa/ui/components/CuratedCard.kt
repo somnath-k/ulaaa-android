@@ -34,8 +34,6 @@ fun CuratedCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         CardImage(
-            keywords = itinerary.title,
-            seed = itinerary.id,
             accent = itinerary.accent,
             scrim = true,
             modifier = Modifier

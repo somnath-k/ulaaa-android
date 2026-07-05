@@ -10,6 +10,7 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.tasks.await
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -29,6 +30,7 @@ interface TripRepository {
 class TripRepositoryImpl @Inject constructor(
     private val firestore: FirebaseFirestore,
     private val auth: FirebaseAuth,
+    private val placeImageRepository: PlaceImageRepository,
 ) : TripRepository {
 
     private val tripsCol get() = firestore.collection("trips")
@@ -53,7 +55,7 @@ class TripRepositoryImpl @Inject constructor(
                 trySend(list)
             }
         awaitClose { registration.remove() }
-    }
+    }.map { list -> list.map { it.withImage() } }
 
     override fun trip(id: String): Flow<Trip?> {
         if (id.isBlank()) return flowOf(null)
@@ -66,8 +68,12 @@ class TripRepositoryImpl @Inject constructor(
                 trySend(snapshot?.takeIf { it.exists() }?.toTrip())
             }
             awaitClose { registration.remove() }
-        }
+        }.map { it?.withImage() }
     }
+
+    /** Resolve a real destination photo (Wikipedia → Pexels), cached; gradient if none. */
+    private suspend fun Trip.withImage(): Trip =
+        copy(imageUrl = placeImageRepository.resolve(destination, destination).url)
 
     override suspend fun addTrip(title: String, destination: String, startMillis: Long, endMillis: Long) {
         val user = auth.currentUser ?: return

@@ -11,6 +11,7 @@ data class Trip(
     val squadSize: Int,
     val days: Int,
     val accent: Color,
+    val imageUrl: String? = null,
 )
 
 /** A discoverable place / point of interest. */
