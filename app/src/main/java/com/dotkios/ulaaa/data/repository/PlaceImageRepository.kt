@@ -1,6 +1,7 @@
 package com.dotkios.ulaaa.data.repository
 
 import com.dotkios.ulaaa.BuildConfig
+import com.dotkios.ulaaa.data.remote.GooglePlacesApi
 import com.dotkios.ulaaa.data.remote.PexelsApi
 import com.dotkios.ulaaa.data.remote.WikipediaApi
 import java.util.concurrent.ConcurrentHashMap
@@ -22,6 +23,7 @@ interface PlaceImageRepository {
 class PlaceImageRepositoryImpl @Inject constructor(
     private val wikipediaApi: WikipediaApi,
     private val pexelsApi: PexelsApi,
+    private val googlePlacesApi: GooglePlacesApi,
 ) : PlaceImageRepository {
 
     private val cache = ConcurrentHashMap<String, PlaceImage>()
@@ -30,13 +32,23 @@ class PlaceImageRepositoryImpl @Inject constructor(
         val key = query.trim().ifBlank { fallbackKeyword.trim() }
         cache[key]?.let { return it }
 
-        val resolved = fromWikipedia(key)
+        // Google Places (real place photos) first when configured, else Wikipedia, else Pexels.
+        val resolved = fromGooglePlaces(key)
+            ?: fromWikipedia(key)
             ?: fromPexels(key.ifBlank { fallbackKeyword })
             ?: PlaceImage(url = null, description = null)
 
         cache[key] = resolved
         return resolved
     }
+
+    private suspend fun fromGooglePlaces(query: String): PlaceImage? = runCatching {
+        val apiKey = BuildConfig.GOOGLE_PLACES_API_KEY
+        if (apiKey.isBlank() || query.isBlank()) return null
+        val response = googlePlacesApi.textSearch(query = query, apiKey = apiKey)
+        val ref = response.results.firstOrNull()?.photos?.firstOrNull()?.photoReference ?: return null
+        PlaceImage(url = GooglePlacesApi.photoUrl(ref, apiKey), description = null)
+    }.getOrNull()
 
     private suspend fun fromWikipedia(query: String): PlaceImage? = runCatching {
         if (query.isBlank()) return null

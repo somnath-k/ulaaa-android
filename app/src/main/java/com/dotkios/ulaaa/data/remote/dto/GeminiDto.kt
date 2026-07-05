@@ -53,3 +53,11 @@ data class ItineraryStopSuggestion(
     val detail: String,
     val cost: Int = 0,
 )
+
+/** A nearby landmark suggestion from Gemini. */
+@Serializable
+data class LandmarkSuggestion(
+    val name: String,
+    val category: String,
+    val detail: String = "",
+)

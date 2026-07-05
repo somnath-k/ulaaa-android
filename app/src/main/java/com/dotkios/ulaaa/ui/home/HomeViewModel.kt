@@ -7,7 +7,9 @@ import com.dotkios.ulaaa.data.model.Category
 import com.dotkios.ulaaa.data.model.CuratedItinerary
 import com.dotkios.ulaaa.data.model.Landmark
 import com.dotkios.ulaaa.data.repository.AuthRepository
+import com.dotkios.ulaaa.data.repository.LocationRepository
 import com.dotkios.ulaaa.data.repository.PlaceImageRepository
+import com.dotkios.ulaaa.data.repository.RecommendationRepository
 import com.dotkios.ulaaa.data.repository.TripRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,6 +25,8 @@ class HomeViewModel @Inject constructor(
     tripRepository: TripRepository,
     authRepository: AuthRepository,
     private val placeImageRepository: PlaceImageRepository,
+    private val locationRepository: LocationRepository,
+    private val recommendationRepository: RecommendationRepository,
 ) : ViewModel() {
 
     private val query = MutableStateFlow("")
@@ -52,12 +56,17 @@ class HomeViewModel @Inject constructor(
         )
 
     init {
-        loadLandmarkImages()
+        loadNearbyLandmarks()
     }
 
-    private fun loadLandmarkImages() {
+    private fun loadNearbyLandmarks() {
         viewModelScope.launch {
-            landmarks.value = MockData.landmarks.map { landmark ->
+            val place = locationRepository.currentCity() ?: "India"
+            val list = recommendationRepository.nearbyLandmarks(place).getOrNull()
+                ?.takeIf { it.isNotEmpty() }
+                ?: MockData.landmarks // fallback if Gemini/location unavailable
+            // Attach real photos (Google Places → Wikipedia → Pexels).
+            landmarks.value = list.map { landmark ->
                 landmark.copy(imageUrl = placeImageRepository.resolve(landmark.name, landmark.category).url)
             }
         }

@@ -38,6 +38,7 @@ android {
         buildConfigField("String", "OLA_MAPS_API_KEY", secret("OLA_MAPS_API_KEY"))
         buildConfigField("String", "GEOAPIFY_API_KEY", secret("GEOAPIFY_API_KEY"))
         buildConfigField("String", "PEXELS_API_KEY", secret("PEXELS_API_KEY"))
+        buildConfigField("String", "GOOGLE_PLACES_API_KEY", secret("GOOGLE_PLACES_API_KEY"))
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", secret("GOOGLE_WEB_CLIENT_ID"))
     }
 
