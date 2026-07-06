@@ -63,7 +63,15 @@ class MapViewModel @Inject constructor(
                     // Share own location so friends can see us on their map.
                     friendLocationRepository.publishMyLocation(point.lat, point.lon)
                     placesRepository.nearbyLandmarks(point.lat, point.lon)
-                        .onSuccess { list -> _uiState.update { it.copy(isLoading = false, landmarks = list) } }
+                        .onSuccess { list ->
+                            _uiState.update {
+                                it.copy(
+                                    isLoading = false,
+                                    landmarks = list,
+                                    error = if (list.isEmpty()) "No popular places found nearby." else null,
+                                )
+                            }
+                        }
                         .onFailure { e -> _uiState.update { it.copy(isLoading = false, error = e.message ?: "Failed to load places") } }
                 }
                 .onFailure { e ->

@@ -70,8 +70,9 @@ class PlacesRepositoryImpl @Inject constructor(
         substringAfterLast('.').replace('_', ' ').replaceFirstChar { it.uppercase() }
 
     private companion object {
+        // Broad enough to surface temples, parks & sights even in rural areas.
         const val CATEGORIES =
-            "tourism.sights,tourism.attraction,entertainment.museum,leisure.park,natural"
+            "tourism,entertainment,leisure.park,natural,religion.place_of_worship,heritage,building.historic"
         val PALETTE = listOf(
             Color(0xFF0E7C7B),
             Color(0xFFFF6B57),
