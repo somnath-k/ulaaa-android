@@ -89,9 +89,8 @@ class PlacesRepositoryImpl @Inject constructor(
         const val MAX_RESULTS = 20
         const val MAX_WORSHIP = 5
 
-        // Broad enough to surface temples, parks & sights even in rural areas.
-        const val CATEGORIES =
-            "tourism,entertainment,leisure.park,natural,religion.place_of_worship,heritage,building.historic"
+        // Only leisure and tourism spots on the map.
+        const val CATEGORIES = "tourism,leisure"
         val PALETTE = listOf(
             Color(0xFF0E7C7B),
             Color(0xFFFF6B57),
