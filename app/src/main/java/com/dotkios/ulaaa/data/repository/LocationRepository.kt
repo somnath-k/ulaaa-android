@@ -23,11 +23,12 @@ class LocationRepository @Inject constructor(
     /** Caller must hold a location permission before invoking. Falls back to a default if unknown. */
     @SuppressLint("MissingPermission")
     suspend fun currentLocation(): Result<GeoPoint?> = runCatching {
-        // Cached fix is instant; only wait for a fresh one if there's no cache.
-        val cached = fused.lastLocation.await()
-        val location = cached ?: runCatching {
-            fused.getCurrentLocation(Priority.PRIORITY_BALANCED_POWER_ACCURACY, null).await()
+        // Fresh fix first so a changed position (e.g. emulator) is picked up;
+        // fall back to the last cached fix only if a fresh one isn't available.
+        val fresh = runCatching {
+            fused.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null).await()
         }.getOrNull()
+        val location = fresh ?: fused.lastLocation.await()
         location?.let { GeoPoint(it.latitude, it.longitude) } ?: DEFAULT_LOCATION
     }
 
