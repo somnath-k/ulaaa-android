@@ -25,8 +25,11 @@ class PlacesRepositoryImpl @Inject constructor(
         lon: Double,
         radiusMeters: Int,
     ): Result<List<Landmark>> = runCatching {
-        // Keep results close — cap the search at ~20 km.
-        val features = fetchFeatures(lat, lon, radiusMeters.coerceAtMost(20_000))
+        // Prefer close places (~20 km); widen to 40/60 km only when too few nearby.
+        val radii = listOf(radiusMeters.coerceAtMost(20_000), 40_000, 60_000).distinct()
+        val features = radii.firstNotNullOfOrNull { radius ->
+            fetchFeatures(lat, lon, radius).takeIf { it.size >= MIN_PLACES }
+        } ?: fetchFeatures(lat, lon, radii.last())
 
         val base = features
             .filter { !it.name.isNullOrBlank() }
@@ -67,6 +70,9 @@ class PlacesRepositoryImpl @Inject constructor(
         substringAfterLast('.').replace('_', ' ').replaceFirstChar { it.uppercase() }
 
     private companion object {
+        // Below this many places within a radius, widen the search.
+        const val MIN_PLACES = 5
+
         // Broad enough to surface temples, parks & sights even in rural areas.
         const val CATEGORIES =
             "tourism,entertainment,leisure.park,natural,religion.place_of_worship,heritage,building.historic"
