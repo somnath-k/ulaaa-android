@@ -1,7 +1,10 @@
 package com.dotkios.ulaaa.ui.map
 
 import android.Manifest
+import android.content.Context
+import android.content.Intent
 import android.graphics.RectF
+import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,6 +16,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -21,13 +26,17 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.DirectionsCar
+import androidx.compose.material.icons.filled.DirectionsWalk
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.outlined.Place
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -42,6 +51,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -161,9 +171,8 @@ fun MapScreen(viewModel: MapViewModel = hiltViewModel()) {
                                 if (lat != null && lon != null) {
                                     focusTarget = GeoPoint(lat, lon)
                                     focusNonce++
-                                } else {
-                                    selected = landmark
                                 }
+                                selected = landmark
                             },
                         )
                     }
@@ -179,6 +188,7 @@ fun MapScreen(viewModel: MapViewModel = hiltViewModel()) {
 
 @Composable
 private fun LandmarkDetailDialog(landmark: Landmark, onDismiss: () -> Unit) {
+    val context = LocalContext.current
     Dialog(onDismissRequest = onDismiss) {
         Card(
             shape = RoundedCornerShape(24.dp),
@@ -214,6 +224,31 @@ private fun LandmarkDetailDialog(landmark: Landmark, onDismiss: () -> Unit) {
                             .heightIn(max = 220.dp)
                             .verticalScroll(rememberScrollState()),
                     )
+                    Spacer(Modifier.height(16.dp))
+                    Text(
+                        text = "Directions",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Button(
+                            onClick = { openDirections(context, landmark, "driving") },
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            Icon(Icons.Filled.DirectionsCar, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text("Drive")
+                        }
+                        OutlinedButton(
+                            onClick = { openDirections(context, landmark, "walking") },
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            Icon(Icons.Filled.DirectionsWalk, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text("Walk")
+                        }
+                    }
                     TextButton(
                         onClick = onDismiss,
                         modifier = Modifier.align(Alignment.End),
@@ -222,6 +257,19 @@ private fun LandmarkDetailDialog(landmark: Landmark, onDismiss: () -> Unit) {
             }
         }
     }
+}
+
+/** Opens the device's maps app with a route to [landmark] in the given travel [mode]. */
+private fun openDirections(context: Context, landmark: Landmark, mode: String) {
+    val destination = if (landmark.lat != null && landmark.lon != null) {
+        "${landmark.lat},${landmark.lon}"
+    } else {
+        Uri.encode(landmark.name)
+    }
+    val uri = Uri.parse(
+        "https://www.google.com/maps/dir/?api=1&destination=$destination&travelmode=$mode",
+    )
+    runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, uri)) }
 }
 
 private const val SOURCE_PLACES = "places-src"
