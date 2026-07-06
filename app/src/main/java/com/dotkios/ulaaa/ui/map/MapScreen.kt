@@ -103,12 +103,13 @@ fun MapScreen(viewModel: MapViewModel = hiltViewModel()) {
             Surface(
                 color = MaterialTheme.colorScheme.errorContainer,
                 shape = MaterialTheme.shapes.medium,
+                onClick = { viewModel.loadNearby() },
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .padding(16.dp),
             ) {
                 Text(
-                    text = error,
+                    text = "$error  Tap to retry.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onErrorContainer,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
