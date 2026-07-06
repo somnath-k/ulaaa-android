@@ -104,10 +104,12 @@ class RecommendationRepositoryImpl @Inject constructor(
 
     override suspend fun nearbyLandmarks(place: String): Result<List<Landmark>> = runCatching {
         val prompt = buildString {
-            append("List 8 well-known landmarks, attractions or places worth visiting in or near ")
-            append("$place. Respond ONLY with a JSON array. Each element must have exactly: ")
+            append("List 8 landmarks, attractions or getaway spots roughly 50 to 100 km from ")
+            append("$place — great for a day trip (not places inside the city itself). ")
+            append("Respond ONLY with a JSON array. Each element must have exactly: ")
             append("\"name\" (the place name), \"category\" (one word like Beach, Temple, Park, Museum, ")
-            append("Fort, Nature, Market, Viewpoint), \"detail\" (one short sentence).")
+            append("Fort, Nature, Waterfall, Hill, Viewpoint), \"detail\" (one short sentence), ")
+            append("\"distanceKm\" (approximate distance in km from $place, between 50 and 100).")
         }
         val response = api.generate(
             model = GeminiApi.MODEL,
@@ -126,7 +128,7 @@ class RecommendationRepositoryImpl @Inject constructor(
                     id = "gemini-landmark-$index",
                     name = s.name,
                     category = s.category.ifBlank { "Place" },
-                    distanceKm = 0.0,
+                    distanceKm = s.distanceKm.toDouble(),
                     rating = 0.0,
                     accent = PALETTE[index % PALETTE.size],
                     description = s.detail,

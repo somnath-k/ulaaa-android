@@ -62,4 +62,5 @@ data class LandmarkSuggestion(
     val name: String,
     val category: String,
     val detail: String = "",
+    val distanceKm: Int = 0,
 )
