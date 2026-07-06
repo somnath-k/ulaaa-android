@@ -11,7 +11,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 interface PlacesRepository {
-    suspend fun nearbyLandmarks(lat: Double, lon: Double, radiusMeters: Int = 8000): Result<List<Landmark>>
+    suspend fun nearbyLandmarks(lat: Double, lon: Double, radiusMeters: Int = 20_000): Result<List<Landmark>>
 }
 
 @Singleton
@@ -25,11 +25,8 @@ class PlacesRepositoryImpl @Inject constructor(
         lon: Double,
         radiusMeters: Int,
     ): Result<List<Landmark>> = runCatching {
-        // Widen the search until we find places — some locations are sparse nearby.
-        val radii = listOf(radiusMeters, 25_000, 60_000).distinct()
-        val features = radii.firstNotNullOfOrNull { radius ->
-            fetchFeatures(lat, lon, radius).takeIf { it.isNotEmpty() }
-        }.orEmpty()
+        // Keep results close — cap the search at ~20 km.
+        val features = fetchFeatures(lat, lon, radiusMeters.coerceAtMost(20_000))
 
         val base = features
             .filter { !it.name.isNullOrBlank() }
