@@ -59,6 +59,7 @@ fun HomeScreen(
     onCreateTrip: () -> Unit,
     onOpenMap: () -> Unit,
     onAskDot: (starterPrompt: String?) -> Unit,
+    onOpenCurated: (com.dotkios.ulaaa.data.model.CuratedItinerary) -> Unit,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -68,6 +69,7 @@ fun HomeScreen(
         onCreateTrip = onCreateTrip,
         onOpenMap = onOpenMap,
         onAskDot = onAskDot,
+        onOpenCurated = onOpenCurated,
     )
 }
 
@@ -79,6 +81,7 @@ private fun HomeContent(
     onCreateTrip: () -> Unit,
     onOpenMap: () -> Unit,
     onAskDot: (String?) -> Unit,
+    onOpenCurated: (com.dotkios.ulaaa.data.model.CuratedItinerary) -> Unit,
 ) {
     if (state.isLoading) {
         Column(
@@ -150,13 +153,23 @@ private fun HomeContent(
         }
 
         item {
-            Section(title = "Curated For You", actionLabel = "See all") {
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = 20.dp),
-                    horizontalArrangement = Arrangement.spacedBy(14.dp),
-                ) {
-                    items(state.curated, key = { it.id }) { curated ->
-                        CuratedCard(itinerary = curated, onClick = {})
+            Section(title = "Curated For You") {
+                when {
+                    state.curatedLoading -> LazyRow(
+                        contentPadding = PaddingValues(horizontal = 20.dp),
+                        horizontalArrangement = Arrangement.spacedBy(14.dp),
+                        userScrollEnabled = false,
+                    ) {
+                        items(2) { CuratedSkeleton() }
+                    }
+
+                    else -> LazyRow(
+                        contentPadding = PaddingValues(horizontal = 20.dp),
+                        horizontalArrangement = Arrangement.spacedBy(14.dp),
+                    ) {
+                        items(state.curated, key = { it.id }) { curated ->
+                            CuratedCard(itinerary = curated, onClick = { onOpenCurated(curated) })
+                        }
                     }
                 }
             }
@@ -312,6 +325,24 @@ private fun LandmarkSkeleton() {
                 .background(shade),
         )
     }
+}
+
+@Composable
+private fun CuratedSkeleton() {
+    val transition = rememberInfiniteTransition(label = "shimmerC")
+    val alpha by transition.animateFloat(
+        initialValue = 0.35f,
+        targetValue = 0.85f,
+        animationSpec = infiniteRepeatable(tween(800), RepeatMode.Reverse),
+        label = "alphaC",
+    )
+    Box(
+        modifier = Modifier
+            .width(220.dp)
+            .height(180.dp)
+            .clip(RoundedCornerShape(28.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = alpha)),
+    )
 }
 
 @Composable

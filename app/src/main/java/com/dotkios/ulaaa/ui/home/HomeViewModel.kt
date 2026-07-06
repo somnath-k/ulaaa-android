@@ -1,6 +1,5 @@
 package com.dotkios.ulaaa.ui.home
 
-import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dotkios.ulaaa.data.model.Category
@@ -31,26 +30,37 @@ class HomeViewModel @Inject constructor(
 
     private val query = MutableStateFlow("")
 
-    // Static curated rail — no per-open Gemini call (that drained the tiny free quota).
-    private val curated = MutableStateFlow(MockData.curated)
-
-    // Landmarks: no mock — empty + loading until Gemini + photos resolve.
+    // Live rails — no mock; empty + loading until Gemini + photos resolve.
+    private val curated = MutableStateFlow<List<CuratedItinerary>>(emptyList())
+    private val curatedLoading = MutableStateFlow(true)
     private val landmarks = MutableStateFlow<List<Landmark>>(emptyList())
     private val landmarksLoading = MutableStateFlow(true)
 
     private val userName: String =
         authRepository.currentUser?.displayName?.takeIf { it.isNotBlank() } ?: "Explorer"
 
+    private data class Rails(
+        val curated: List<CuratedItinerary>,
+        val curatedLoading: Boolean,
+        val landmarks: List<Landmark>,
+        val landmarksLoading: Boolean,
+    )
+
+    private val rails = combine(curated, curatedLoading, landmarks, landmarksLoading) { c, cl, l, ll ->
+        Rails(c, cl, l, ll)
+    }
+
     val uiState: StateFlow<HomeUiState> =
-        combine(query, tripRepository.trips, curated, landmarks, landmarksLoading) { q, trips, curatedList, landmarkList, loading ->
+        combine(query, tripRepository.trips, rails) { q, trips, r ->
             HomeUiState(
                 isLoading = false,
                 userName = userName,
                 query = q,
                 trips = trips,
-                curated = curatedList,
-                nearbyLandmarks = landmarkList,
-                nearbyLoading = loading,
+                curated = r.curated,
+                curatedLoading = r.curatedLoading,
+                nearbyLandmarks = r.landmarks,
+                nearbyLoading = r.landmarksLoading,
                 categories = MockData.categories,
             )
         }.stateIn(
@@ -60,19 +70,22 @@ class HomeViewModel @Inject constructor(
         )
 
     init {
-        loadNearbyLandmarks()
+        loadRecommendations()
     }
 
-    private fun loadNearbyLandmarks() {
+    private fun loadRecommendations() {
         viewModelScope.launch {
-            landmarksLoading.value = true
             val place = locationRepository.currentCity() ?: "India"
-            val list = recommendationRepository.nearbyLandmarks(place).getOrNull().orEmpty()
-            // Resolve real photos before publishing so cards appear with images, not blank.
-            landmarks.value = list.map { landmark ->
-                landmark.copy(imageUrl = placeImageRepository.resolve(landmark.name, landmark.category).url)
+            launch {
+                val list = recommendationRepository.nearbyLandmarks(place).getOrNull().orEmpty()
+                landmarks.value = list.map { it.copy(imageUrl = placeImageRepository.resolve(it.name, it.category).url) }
+                landmarksLoading.value = false
             }
-            landmarksLoading.value = false
+            launch {
+                val list = recommendationRepository.curatedItineraries(place).getOrNull().orEmpty()
+                curated.value = list.map { it.copy(imageUrl = placeImageRepository.resolve(it.destination, it.title).url) }
+                curatedLoading.value = false
+            }
         }
     }
 
@@ -81,18 +94,8 @@ class HomeViewModel @Inject constructor(
     }
 }
 
-/** Curated/landmark/category rails stay mocked until their APIs are wired (Gemini, Geoapify feed). */
+/** Only the category chips remain static; trips/curated/landmarks are all live. */
 private object MockData {
-    private val teal = Color(0xFF0E7C7B)
-    private val coral = Color(0xFFFF6B57)
-    private val sand = Color(0xFFF4A259)
-
-    val curated = listOf(
-        CuratedItinerary("c1", "48h in Pondicherry", "French quarter + cafés", 6, coral),
-        CuratedItinerary("c2", "Coorg Coffee Trail", "Estates & waterfalls", 5, teal),
-        CuratedItinerary("c3", "Rajasthan in 5 Days", "Forts & desert nights", 9, sand),
-    )
-
     val categories = listOf(
         Category("cat1", "Beaches", "🏖️"),
         Category("cat2", "Mountains", "⛰️"),

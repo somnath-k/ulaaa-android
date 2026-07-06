@@ -3,24 +3,30 @@ package com.dotkios.ulaaa.data.repository
 import androidx.compose.ui.graphics.Color
 import com.dotkios.ulaaa.BuildConfig
 import com.dotkios.ulaaa.data.model.CuratedItinerary
+import com.dotkios.ulaaa.data.model.ItineraryStop
 import com.dotkios.ulaaa.data.model.Landmark
 import com.dotkios.ulaaa.data.remote.GeminiApi
 import com.dotkios.ulaaa.data.remote.dto.GeminiContent
 import com.dotkios.ulaaa.data.remote.dto.GeminiGenerationConfig
 import com.dotkios.ulaaa.data.remote.dto.GeminiPart
 import com.dotkios.ulaaa.data.remote.dto.GeminiRequest
+import com.dotkios.ulaaa.data.remote.dto.ItineraryStopSuggestion
 import com.dotkios.ulaaa.data.remote.dto.ItinerarySuggestion
 import com.dotkios.ulaaa.data.remote.dto.LandmarkSuggestion
 import kotlinx.serialization.json.Json
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
 interface RecommendationRepository {
-    /** Gemini-generated curated itineraries for the given interest theme. */
-    suspend fun curatedItineraries(interest: String): Result<List<CuratedItinerary>>
+    /** Gemini-generated curated trip ideas, tailored to [place]. */
+    suspend fun curatedItineraries(place: String): Result<List<CuratedItinerary>>
 
     /** Gemini-suggested landmarks in or near [place]. */
     suspend fun nearbyLandmarks(place: String): Result<List<Landmark>>
+
+    /** Ready-made day-by-day itinerary for a destination (in-memory preview, not saved). */
+    suspend fun itineraryFor(destination: String, days: Int): Result<List<ItineraryStop>>
 }
 
 @Singleton
@@ -29,12 +35,14 @@ class RecommendationRepositoryImpl @Inject constructor(
     private val json: Json,
 ) : RecommendationRepository {
 
-    override suspend fun curatedItineraries(interest: String): Result<List<CuratedItinerary>> = runCatching {
+    override suspend fun curatedItineraries(place: String): Result<List<CuratedItinerary>> = runCatching {
         val prompt = buildString {
-            append("Suggest 6 short curated travel itineraries in India ")
-            append("for a traveller interested in $interest. ")
-            append("Respond ONLY with a JSON array. Each element must have exactly these fields: ")
-            append("\"title\" (max 4 words), \"subtitle\" (max 6 words), \"stopCount\" (integer between 3 and 12).")
+            append("Suggest 6 curated trip ideas a traveller near $place could take ")
+            append("(mix of weekend getaways and longer trips, reachable from there). ")
+            append("Respond ONLY with a JSON array. Each element must have exactly: ")
+            append("\"title\" (catchy, max 4 words), \"subtitle\" (max 6 words), ")
+            append("\"destination\" (the city/place to visit), \"days\" (integer 2-7), ")
+            append("\"stopCount\" (integer between 3 and 12).")
         }
         val response = api.generate(
             model = GeminiApi.MODEL,
@@ -57,6 +65,39 @@ class RecommendationRepositoryImpl @Inject constructor(
                     subtitle = s.subtitle,
                     stopCount = s.stopCount,
                     accent = PALETTE[index % PALETTE.size],
+                    destination = s.destination.ifBlank { s.title },
+                    days = s.days.coerceIn(1, 10),
+                )
+            }
+    }
+
+    override suspend fun itineraryFor(destination: String, days: Int): Result<List<ItineraryStop>> = runCatching {
+        val dayCount = days.coerceIn(1, 10)
+        val prompt = buildString {
+            append("Build a $dayCount-day travel itinerary for $destination. ")
+            append("Give 2-3 stops per day. Respond ONLY with a JSON array where each element has: ")
+            append("\"day\" (integer starting at 1), \"title\" (a place or activity, max 5 words), ")
+            append("\"detail\" (one short sentence), and ")
+            append("\"cost\" (approximate per-person cost in Indian Rupees as an integer, 0 if free).")
+        }
+        val response = api.generate(
+            model = GeminiApi.MODEL,
+            apiKey = BuildConfig.GEMINI_API_KEY,
+            body = GeminiRequest(
+                contents = listOf(GeminiContent(listOf(GeminiPart(prompt)))),
+                generationConfig = GeminiGenerationConfig(responseMimeType = "application/json", temperature = 0.8),
+            ),
+        )
+        val text = response.candidates.firstOrNull()?.content?.parts?.firstNotNullOfOrNull { it.text }
+            ?: error("Gemini returned no itinerary")
+        json.decodeFromString<List<ItineraryStopSuggestion>>(text)
+            .map { s ->
+                ItineraryStop(
+                    id = UUID.randomUUID().toString(),
+                    day = s.day,
+                    title = s.title,
+                    detail = s.detail,
+                    cost = s.cost,
                 )
             }
     }

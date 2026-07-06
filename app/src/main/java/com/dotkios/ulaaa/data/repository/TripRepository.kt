@@ -22,7 +22,8 @@ interface TripRepository {
     /** Trips the current user is a member of (owner or added to the squad). */
     val trips: Flow<List<Trip>>
     fun trip(id: String): Flow<Trip?>
-    suspend fun addTrip(title: String, destination: String, startMillis: Long, endMillis: Long)
+    /** Creates a trip and returns its id. */
+    suspend fun addTrip(title: String, destination: String, startMillis: Long, endMillis: Long): String
     suspend fun deleteTrip(id: String)
 }
 
@@ -75,8 +76,8 @@ class TripRepositoryImpl @Inject constructor(
     private suspend fun Trip.withImage(): Trip =
         copy(imageUrl = placeImageRepository.resolve(destination, destination).url)
 
-    override suspend fun addTrip(title: String, destination: String, startMillis: Long, endMillis: Long) {
-        val user = auth.currentUser ?: return
+    override suspend fun addTrip(title: String, destination: String, startMillis: Long, endMillis: Long): String {
+        val user = auth.currentUser ?: return ""
         val name = user.displayName?.takeIf { it.isNotBlank() } ?: "Me"
         val doc = tripsCol.document()
         doc.set(
@@ -92,6 +93,7 @@ class TripRepositoryImpl @Inject constructor(
                 "memberNames" to mapOf(user.uid to name),
             ),
         ).await()
+        return doc.id
     }
 
     override suspend fun deleteTrip(id: String) {

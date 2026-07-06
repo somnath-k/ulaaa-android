@@ -35,6 +35,9 @@ data class CuratedItinerary(
     val subtitle: String,
     val stopCount: Int,
     val accent: Color,
+    val destination: String = "",
+    val days: Int = 3,
+    val imageUrl: String? = null,
 )
 
 /** A discovery category chip (Beaches, Mountains, etc.). */

@@ -35,6 +35,7 @@ fun CuratedCard(
     ) {
         CardImage(
             accent = itinerary.accent,
+            imageUrl = itinerary.imageUrl,
             scrim = true,
             modifier = Modifier
                 .fillMaxWidth()

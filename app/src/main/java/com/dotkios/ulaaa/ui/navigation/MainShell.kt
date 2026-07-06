@@ -16,6 +16,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.dotkios.ulaaa.ui.bucketlist.BucketListScreen
 import com.dotkios.ulaaa.ui.chat.ChatScreen
+import com.dotkios.ulaaa.ui.curated.CuratedDetailScreen
 import com.dotkios.ulaaa.ui.friends.FriendsScreen
 import com.dotkios.ulaaa.ui.friends.InviteContactsScreen
 import com.dotkios.ulaaa.ui.home.HomeScreen
@@ -33,6 +34,7 @@ private const val ROUTE_TRIP_CHAT = "trip_chat"
 private const val ROUTE_FRIENDS = "friends"
 private const val ROUTE_INVITE_CONTACTS = "invite_contacts"
 private const val ROUTE_BUCKET_LIST = "bucketlist"
+private const val ROUTE_CURATED = "curated_detail"
 
 /** Authenticated shell: bottom-nav Scaffold hosting the top-level destinations. */
 @Composable
@@ -68,6 +70,12 @@ fun MainShell(onSignOut: () -> Unit) {
                         }
                         navController.navigate(route)
                     },
+                    onOpenCurated = { c ->
+                        navController.navigate(
+                            "$ROUTE_CURATED?title=${Uri.encode(c.title)}" +
+                                "&destination=${Uri.encode(c.destination)}&days=${c.days}",
+                        )
+                    },
                 )
             }
             composable(TopLevelDestination.TRIPS.route) {
@@ -86,6 +94,23 @@ fun MainShell(onSignOut: () -> Unit) {
             }
             composable(ROUTE_BUCKET_LIST) {
                 BucketListScreen(onBack = { navController.popBackStack() })
+            }
+            composable(
+                route = "$ROUTE_CURATED?title={title}&destination={destination}&days={days}",
+                arguments = listOf(
+                    navArgument("title") { type = NavType.StringType; nullable = true; defaultValue = null },
+                    navArgument("destination") { type = NavType.StringType; nullable = true; defaultValue = null },
+                    navArgument("days") { type = NavType.StringType; nullable = true; defaultValue = "3" },
+                ),
+            ) {
+                CuratedDetailScreen(
+                    onBack = { navController.popBackStack() },
+                    onSaved = { tripId ->
+                        navController.navigate("$ROUTE_TRIP_DETAIL/$tripId") {
+                            popUpTo(TopLevelDestination.HOME.route)
+                        }
+                    },
+                )
             }
 
             composable(
