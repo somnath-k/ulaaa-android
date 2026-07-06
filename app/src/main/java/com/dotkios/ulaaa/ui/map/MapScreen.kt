@@ -197,6 +197,7 @@ private fun LandmarkDetailDialog(landmark: Landmark, onDismiss: () -> Unit) {
 
 private const val SOURCE_PLACES = "places-src"
 private const val SOURCE_FRIENDS = "friends-src"
+private const val SOURCE_ME = "me-src"
 
 @Composable
 private fun OlaMap(
@@ -231,6 +232,14 @@ private fun OlaMap(
             .target(LatLng(point.lat, point.lon))
             .zoom(13.5)
             .build()
+    }
+
+    LaunchedEffect(location, style) {
+        val loaded = style ?: return@LaunchedEffect
+        val point = location ?: return@LaunchedEffect
+        val me = Feature.fromGeometry(Point.fromLngLat(point.lon, point.lat))
+            .apply { addStringProperty("title", "You") }
+        (loaded.getSource(SOURCE_ME) as? GeoJsonSource)?.setGeoJson(FeatureCollection.fromFeatures(listOf(me)))
     }
 
     LaunchedEffect(landmarks, style) {
@@ -296,6 +305,28 @@ private fun setupMarkerLayers(style: Style) {
             PropertyFactory.textColor(coral),
             PropertyFactory.textHaloColor(white),
             PropertyFactory.textHaloWidth(1.2f),
+            PropertyFactory.textOffset(arrayOf(0f, -1.6f)),
+            PropertyFactory.textAllowOverlap(true),
+        ),
+    )
+
+    // "You" — the user's own live location.
+    style.addSource(GeoJsonSource(SOURCE_ME))
+    style.addLayer(
+        CircleLayer("me-circle", SOURCE_ME).withProperties(
+            PropertyFactory.circleColor(0xFF1E6FEA.toInt()),
+            PropertyFactory.circleRadius(9f),
+            PropertyFactory.circleStrokeColor(white),
+            PropertyFactory.circleStrokeWidth(4f),
+        ),
+    )
+    style.addLayer(
+        SymbolLayer("me-label", SOURCE_ME).withProperties(
+            PropertyFactory.textField(Expression.get("title")),
+            PropertyFactory.textSize(12f),
+            PropertyFactory.textColor(0xFF1E6FEA.toInt()),
+            PropertyFactory.textHaloColor(white),
+            PropertyFactory.textHaloWidth(1.4f),
             PropertyFactory.textOffset(arrayOf(0f, -1.6f)),
             PropertyFactory.textAllowOverlap(true),
         ),
