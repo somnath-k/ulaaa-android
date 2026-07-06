@@ -12,5 +12,6 @@ data class HomeUiState(
     val trips: List<Trip> = emptyList(),
     val curated: List<CuratedItinerary> = emptyList(),
     val nearbyLandmarks: List<Landmark> = emptyList(),
+    val nearbyLoading: Boolean = true,
     val categories: List<Category> = emptyList(),
 )

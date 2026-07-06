@@ -33,13 +33,16 @@ class HomeViewModel @Inject constructor(
 
     // Static curated rail — no per-open Gemini call (that drained the tiny free quota).
     private val curated = MutableStateFlow(MockData.curated)
-    private val landmarks = MutableStateFlow(MockData.landmarks)
+
+    // Landmarks: no mock — empty + loading until Gemini + photos resolve.
+    private val landmarks = MutableStateFlow<List<Landmark>>(emptyList())
+    private val landmarksLoading = MutableStateFlow(true)
 
     private val userName: String =
         authRepository.currentUser?.displayName?.takeIf { it.isNotBlank() } ?: "Explorer"
 
     val uiState: StateFlow<HomeUiState> =
-        combine(query, tripRepository.trips, curated, landmarks) { q, trips, curatedList, landmarkList ->
+        combine(query, tripRepository.trips, curated, landmarks, landmarksLoading) { q, trips, curatedList, landmarkList, loading ->
             HomeUiState(
                 isLoading = false,
                 userName = userName,
@@ -47,6 +50,7 @@ class HomeViewModel @Inject constructor(
                 trips = trips,
                 curated = curatedList,
                 nearbyLandmarks = landmarkList,
+                nearbyLoading = loading,
                 categories = MockData.categories,
             )
         }.stateIn(
@@ -61,14 +65,14 @@ class HomeViewModel @Inject constructor(
 
     private fun loadNearbyLandmarks() {
         viewModelScope.launch {
+            landmarksLoading.value = true
             val place = locationRepository.currentCity() ?: "India"
-            val list = recommendationRepository.nearbyLandmarks(place).getOrNull()
-                ?.takeIf { it.isNotEmpty() }
-                ?: MockData.landmarks // fallback if Gemini/location unavailable
-            // Attach real photos (Google Places → Wikipedia → Pexels).
+            val list = recommendationRepository.nearbyLandmarks(place).getOrNull().orEmpty()
+            // Resolve real photos before publishing so cards appear with images, not blank.
             landmarks.value = list.map { landmark ->
                 landmark.copy(imageUrl = placeImageRepository.resolve(landmark.name, landmark.category).url)
             }
+            landmarksLoading.value = false
         }
     }
 
@@ -82,19 +86,11 @@ private object MockData {
     private val teal = Color(0xFF0E7C7B)
     private val coral = Color(0xFFFF6B57)
     private val sand = Color(0xFFF4A259)
-    private val indigo = Color(0xFF5A6FEA)
 
     val curated = listOf(
         CuratedItinerary("c1", "48h in Pondicherry", "French quarter + cafés", 6, coral),
         CuratedItinerary("c2", "Coorg Coffee Trail", "Estates & waterfalls", 5, teal),
         CuratedItinerary("c3", "Rajasthan in 5 Days", "Forts & desert nights", 9, sand),
-    )
-
-    val landmarks = listOf(
-        Landmark("l1", "Marina Beach", "Beach", 2.4, 4.5, teal),
-        Landmark("l2", "Kapaleeshwarar", "Temple", 5.1, 4.7, sand),
-        Landmark("l3", "Elliot's Beach", "Beach", 6.8, 4.3, indigo),
-        Landmark("l4", "Guindy Park", "Nature", 8.0, 4.2, coral),
     )
 
     val categories = listOf(

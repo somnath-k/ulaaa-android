@@ -1,5 +1,10 @@
 package com.dotkios.ulaaa.ui.home
 
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,8 +16,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -114,12 +121,29 @@ private fun HomeContent(
 
         item {
             Section(title = "Nearby Landmarks", actionLabel = "Map", onAction = onOpenMap) {
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = 20.dp),
-                    horizontalArrangement = Arrangement.spacedBy(14.dp),
-                ) {
-                    items(state.nearbyLandmarks, key = { it.id }) { landmark ->
-                        LandmarkCard(landmark = landmark, onClick = { onOpenMap() })
+                when {
+                    state.nearbyLoading -> LazyRow(
+                        contentPadding = PaddingValues(horizontal = 20.dp),
+                        horizontalArrangement = Arrangement.spacedBy(14.dp),
+                        userScrollEnabled = false,
+                    ) {
+                        items(3) { LandmarkSkeleton() }
+                    }
+
+                    state.nearbyLandmarks.isEmpty() -> Text(
+                        "No nearby spots found. Check your connection and reopen.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 20.dp),
+                    )
+
+                    else -> LazyRow(
+                        contentPadding = PaddingValues(horizontal = 20.dp),
+                        horizontalArrangement = Arrangement.spacedBy(14.dp),
+                    ) {
+                        items(state.nearbyLandmarks, key = { it.id }) { landmark ->
+                            LandmarkCard(landmark = landmark, onClick = { onOpenMap() })
+                        }
                     }
                 }
             }
@@ -250,6 +274,43 @@ private fun AiSearchPill(onClick: () -> Unit, modifier: Modifier = Modifier) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+    }
+}
+
+@Composable
+private fun LandmarkSkeleton() {
+    val transition = rememberInfiniteTransition(label = "shimmer")
+    val alpha by transition.animateFloat(
+        initialValue = 0.35f,
+        targetValue = 0.85f,
+        animationSpec = infiniteRepeatable(tween(800), RepeatMode.Reverse),
+        label = "alpha",
+    )
+    val shade = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = alpha)
+    Column(modifier = Modifier.width(160.dp)) {
+        Box(
+            modifier = Modifier
+                .width(160.dp)
+                .height(110.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(shade),
+        )
+        Box(
+            modifier = Modifier
+                .padding(top = 10.dp)
+                .width(110.dp)
+                .height(14.dp)
+                .clip(RoundedCornerShape(4.dp))
+                .background(shade),
+        )
+        Box(
+            modifier = Modifier
+                .padding(top = 6.dp)
+                .width(72.dp)
+                .height(12.dp)
+                .clip(RoundedCornerShape(4.dp))
+                .background(shade),
+        )
     }
 }
 
