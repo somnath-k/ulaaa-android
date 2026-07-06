@@ -8,7 +8,6 @@ import com.dotkios.ulaaa.data.model.Trip
 data class HomeUiState(
     val isLoading: Boolean = true,
     val userName: String = "Explorer",
-    val query: String = "",
     val trips: List<Trip> = emptyList(),
     val curated: List<CuratedItinerary> = emptyList(),
     val curatedLoading: Boolean = true,

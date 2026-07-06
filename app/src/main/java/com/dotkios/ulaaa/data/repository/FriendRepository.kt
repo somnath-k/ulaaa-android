@@ -19,7 +19,6 @@ interface FriendRepository {
     fun friends(): Flow<List<Friend>>
     fun incomingRequests(): Flow<List<FriendRequest>>
     suspend fun searchByEmail(email: String): Result<UserProfile?>
-    suspend fun findByPhone(normalizedPhone: String): Result<UserProfile?>
     /** Maps normalized phone -> Ulaaa user, for the phones that belong to a registered user. */
     suspend fun findUsersByPhones(normalizedPhones: List<String>): Result<Map<String, UserProfile>>
     suspend fun sendRequest(to: UserProfile): Result<Unit>
@@ -75,13 +74,6 @@ class FriendRepositoryImpl @Inject constructor(
         val snapshot = users.whereEqualTo("email", email.trim()).limit(1).get().await()
         val profile = snapshot.documents.firstOrNull()?.toObject(UserProfile::class.java)
         // Don't return yourself as a searchable friend.
-        profile?.takeIf { it.uid != me()?.uid }
-    }
-
-    override suspend fun findByPhone(normalizedPhone: String): Result<UserProfile?> = runCatching {
-        if (normalizedPhone.isBlank()) return@runCatching null
-        val snapshot = users.whereEqualTo("phone", normalizedPhone).limit(1).get().await()
-        val profile = snapshot.documents.firstOrNull()?.toObject(UserProfile::class.java)
         profile?.takeIf { it.uid != me()?.uid }
     }
 

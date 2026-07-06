@@ -28,8 +28,6 @@ class HomeViewModel @Inject constructor(
     private val recommendationRepository: RecommendationRepository,
 ) : ViewModel() {
 
-    private val query = MutableStateFlow("")
-
     // Live rails — no mock; empty + loading until Gemini + photos resolve.
     private val curated = MutableStateFlow<List<CuratedItinerary>>(emptyList())
     private val curatedLoading = MutableStateFlow(true)
@@ -51,11 +49,10 @@ class HomeViewModel @Inject constructor(
     }
 
     val uiState: StateFlow<HomeUiState> =
-        combine(query, tripRepository.trips, rails) { q, trips, r ->
+        combine(tripRepository.trips, rails) { trips, r ->
             HomeUiState(
                 isLoading = false,
                 userName = userName,
-                query = q,
                 trips = trips,
                 curated = r.curated,
                 curatedLoading = r.curatedLoading,
@@ -89,9 +86,6 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    fun onQueryChange(value: String) {
-        query.value = value
-    }
 }
 
 /** Only the category chips remain static; trips/curated/landmarks are all live. */
