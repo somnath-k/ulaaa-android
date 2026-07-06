@@ -20,16 +20,20 @@ class LocationRepository @Inject constructor(
 ) {
     private val fused = LocationServices.getFusedLocationProviderClient(context)
 
-    /** Caller must hold a location permission before invoking. */
+    /** Caller must hold a location permission before invoking. Falls back to a default if unknown. */
     @SuppressLint("MissingPermission")
     suspend fun currentLocation(): Result<GeoPoint?> = runCatching {
         // Cached fix is instant; only wait for a fresh one if there's no cache.
         val cached = fused.lastLocation.await()
-        val location = cached ?: fused.getCurrentLocation(
-            Priority.PRIORITY_BALANCED_POWER_ACCURACY,
-            null,
-        ).await()
-        location?.let { GeoPoint(it.latitude, it.longitude) }
+        val location = cached ?: runCatching {
+            fused.getCurrentLocation(Priority.PRIORITY_BALANCED_POWER_ACCURACY, null).await()
+        }.getOrNull()
+        location?.let { GeoPoint(it.latitude, it.longitude) } ?: DEFAULT_LOCATION
+    }
+
+    private companion object {
+        // Used when the device has no location (e.g. emulator without a set position).
+        val DEFAULT_LOCATION = GeoPoint(13.0827, 80.2707) // Chennai
     }
 
     /** Reverse-geocodes the current location to a city/area name (null if unavailable). */
