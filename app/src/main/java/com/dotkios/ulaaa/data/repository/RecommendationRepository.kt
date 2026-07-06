@@ -37,8 +37,9 @@ class RecommendationRepositoryImpl @Inject constructor(
 
     override suspend fun curatedItineraries(place: String): Result<List<CuratedItinerary>> = runCatching {
         val prompt = buildString {
-            append("Suggest 6 curated trip ideas a traveller near $place could take ")
-            append("(mix of weekend getaways and longer trips, reachable from there). ")
+            append("Suggest 6 curated trip ideas for a traveller based near $place. ")
+            append("Give a MIX: at least 2 nearby weekend getaways, at least 2 domestic (same-country) ")
+            append("trips, and 1-2 international destinations — not only international. ")
             append("Respond ONLY with a JSON array. Each element must have exactly: ")
             append("\"title\" (catchy, max 4 words), \"subtitle\" (max 6 words), ")
             append("\"destination\" (the city/place to visit), \"days\" (integer 2-7), ")
