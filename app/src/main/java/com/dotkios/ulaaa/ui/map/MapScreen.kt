@@ -11,16 +11,22 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.outlined.Place
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -50,6 +56,7 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import org.maplibre.android.camera.CameraPosition
+import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.Style
@@ -210,20 +217,32 @@ private fun OlaMap(
     var map by remember { mutableStateOf<MapLibreMap?>(null) }
     var style by remember { mutableStateOf<Style?>(null) }
 
-    AndroidView(
-        modifier = modifier,
-        factory = {
-            mapView.apply {
-                getMapAsync { libreMap ->
-                    libreMap.setStyle(Style.Builder().fromUri(OLA_STYLE_URL)) { loaded ->
-                        setupMarkerLayers(loaded)
-                        map = libreMap
-                        style = loaded
+    Box(modifier = modifier) {
+        AndroidView(
+            modifier = Modifier.fillMaxSize(),
+            factory = {
+                mapView.apply {
+                    getMapAsync { libreMap ->
+                        libreMap.setStyle(Style.Builder().fromUri(OLA_STYLE_URL)) { loaded ->
+                            setupMarkerLayers(loaded)
+                            map = libreMap
+                            style = loaded
+                        }
                     }
                 }
-            }
-        },
-    )
+            },
+        )
+
+        Column(
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .padding(end = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            ZoomButton(Icons.Filled.Add, "Zoom in") { map?.animateCamera(CameraUpdateFactory.zoomIn()) }
+            ZoomButton(Icons.Filled.Remove, "Zoom out") { map?.animateCamera(CameraUpdateFactory.zoomOut()) }
+        }
+    }
 
     LaunchedEffect(location, map) {
         val libreMap = map ?: return@LaunchedEffect
@@ -258,6 +277,24 @@ private fun OlaMap(
             Feature.fromGeometry(Point.fromLngLat(f.lon, f.lat)).apply { addStringProperty("title", f.name) }
         }
         (loaded.getSource(SOURCE_FRIENDS) as? GeoJsonSource)?.setGeoJson(FeatureCollection.fromFeatures(features))
+    }
+}
+
+@Composable
+private fun ZoomButton(icon: ImageVector, description: String, onClick: () -> Unit) {
+    Surface(
+        onClick = onClick,
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 4.dp,
+        modifier = Modifier.size(46.dp),
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = description,
+            tint = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(11.dp),
+        )
     }
 }
 
