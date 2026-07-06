@@ -39,14 +39,28 @@ class LocationRepository @Inject constructor(
     /** Reverse-geocodes the current location to a city/area name (null if unavailable). */
     suspend fun currentCity(): String? {
         val point = currentLocation().getOrNull() ?: return null
-        return withContext(Dispatchers.IO) {
-            runCatching {
-                @Suppress("DEPRECATION")
-                Geocoder(context, Locale.getDefault())
-                    .getFromLocation(point.lat, point.lon, 1)
-                    ?.firstOrNull()
-                    ?.let { it.locality ?: it.subAdminArea ?: it.adminArea }
-            }.getOrNull()
-        }
+        return reverseCity(point)
+    }
+
+    /**
+     * A grounded location label for AI prompts: city name plus exact coordinates.
+     * Coordinates are always included so recommendations stay anchored even when the
+     * Geocoder returns no city (common on emulators). Never null.
+     */
+    suspend fun currentPlaceLabel(): String {
+        val point = currentLocation().getOrNull() ?: return "India"
+        val city = reverseCity(point)
+        val coords = "latitude %.4f, longitude %.4f".format(point.lat, point.lon)
+        return if (city != null) "$city ($coords)" else coords
+    }
+
+    private suspend fun reverseCity(point: GeoPoint): String? = withContext(Dispatchers.IO) {
+        runCatching {
+            @Suppress("DEPRECATION")
+            Geocoder(context, Locale.getDefault())
+                .getFromLocation(point.lat, point.lon, 1)
+                ?.firstOrNull()
+                ?.let { it.locality ?: it.subAdminArea ?: it.adminArea }
+        }.getOrNull()
     }
 }

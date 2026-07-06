@@ -72,7 +72,7 @@ class HomeViewModel @Inject constructor(
 
     private fun loadRecommendations() {
         viewModelScope.launch {
-            val place = locationRepository.currentCity() ?: "India"
+            val place = locationRepository.currentPlaceLabel()
             launch {
                 val list = recommendationRepository.nearbyLandmarks(place).getOrNull().orEmpty()
                 landmarks.value = list.map { it.copy(imageUrl = placeImageRepository.resolve(it.name, it.category).url) }

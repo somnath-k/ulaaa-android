@@ -105,12 +105,16 @@ class RecommendationRepositoryImpl @Inject constructor(
 
     override suspend fun nearbyLandmarks(place: String): Result<List<Landmark>> = runCatching {
         val prompt = buildString {
-            append("List 8 landmarks, attractions or getaway spots roughly 50 to 100 km from ")
-            append("$place — great for a day trip (not places inside the city itself). ")
+            append("The traveller is located at $place. ")
+            append("List 8 real landmarks, attractions or getaway spots whose straight-line ")
+            append("distance from that exact location is between 50 and 100 km — great for a day ")
+            append("trip, NOT places inside the traveller's own city. ")
+            append("Compute each distance from the given latitude/longitude and only include a ")
+            append("place if its distance truly falls in the 50-100 km range. ")
             append("Respond ONLY with a JSON array. Each element must have exactly: ")
             append("\"name\" (the place name), \"category\" (one word like Beach, Temple, Park, Museum, ")
             append("Fort, Nature, Waterfall, Hill, Viewpoint), \"detail\" (one short sentence), ")
-            append("\"distanceKm\" (approximate distance in km from $place, between 50 and 100).")
+            append("\"distanceKm\" (the actual computed distance in km, an integer between 50 and 100).")
         }
         val response = api.generate(
             model = GeminiApi.MODEL,
@@ -123,7 +127,7 @@ class RecommendationRepositoryImpl @Inject constructor(
         val text = response.candidates.firstOrNull()?.content?.parts?.firstNotNullOfOrNull { it.text }
             ?: error("Gemini returned no landmarks")
         json.decodeFromString<List<LandmarkSuggestion>>(text)
-            .filter { it.name.isNotBlank() }
+            .filter { it.name.isNotBlank() && it.distanceKm in 40..120 }
             .mapIndexed { index, s ->
                 Landmark(
                     id = "gemini-landmark-$index",
