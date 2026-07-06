@@ -11,7 +11,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 interface PlacesRepository {
-    suspend fun nearbyLandmarks(lat: Double, lon: Double, radiusMeters: Int = 5000): Result<List<Landmark>>
+    suspend fun nearbyLandmarks(lat: Double, lon: Double, radiusMeters: Int = 8000): Result<List<Landmark>>
 }
 
 @Singleton
@@ -25,15 +25,13 @@ class PlacesRepositoryImpl @Inject constructor(
         lon: Double,
         radiusMeters: Int,
     ): Result<List<Landmark>> = runCatching {
-        val response = api.nearbyPlaces(
-            categories = CATEGORIES,
-            filter = "circle:$lon,$lat,$radiusMeters",
-            bias = "proximity:$lon,$lat",
-            limit = 20,
-            apiKey = BuildConfig.GEOAPIFY_API_KEY,
-        )
-        val base = response.features
-            .mapNotNull { it.properties }
+        // Widen the search until we find places — some locations are sparse nearby.
+        val radii = listOf(radiusMeters, 25_000, 60_000).distinct()
+        val features = radii.firstNotNullOfOrNull { radius ->
+            fetchFeatures(lat, lon, radius).takeIf { it.isNotEmpty() }
+        }.orEmpty()
+
+        val base = features
             .filter { !it.name.isNullOrBlank() }
             .mapIndexed { index, props ->
                 Landmark(
@@ -58,6 +56,15 @@ class PlacesRepositoryImpl @Inject constructor(
             }.awaitAll()
         }
     }
+
+    private suspend fun fetchFeatures(lat: Double, lon: Double, radiusMeters: Int) =
+        api.nearbyPlaces(
+            categories = CATEGORIES,
+            filter = "circle:$lon,$lat,$radiusMeters",
+            bias = "proximity:$lon,$lat",
+            limit = 20,
+            apiKey = BuildConfig.GEOAPIFY_API_KEY,
+        ).features.mapNotNull { it.properties }
 
     private fun String.prettyCategory(): String =
         substringAfterLast('.').replace('_', ' ').replaceFirstChar { it.uppercase() }
