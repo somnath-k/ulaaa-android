@@ -1,6 +1,7 @@
 package com.dotkios.ulaaa.ui.map
 
 import android.Manifest
+import android.graphics.RectF
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,8 +35,10 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -88,12 +91,19 @@ fun MapScreen(viewModel: MapViewModel = hiltViewModel()) {
     }
 
     var selected by remember { mutableStateOf<Landmark?>(null) }
+    // A tap on a nearby card requests the map to fly to that point; the nonce
+    // makes repeated taps on the same card re-trigger the animation.
+    var focusTarget by remember { mutableStateOf<GeoPoint?>(null) }
+    var focusNonce by remember { mutableIntStateOf(0) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         OlaMap(
             location = state.location,
             landmarks = state.landmarks,
             friends = state.friends,
+            focusTarget = focusTarget,
+            focusNonce = focusNonce,
+            onPlaceTap = { name -> selected = state.landmarks.firstOrNull { it.name == name } },
             modifier = Modifier.fillMaxSize(),
         )
 
@@ -143,7 +153,19 @@ fun MapScreen(viewModel: MapViewModel = hiltViewModel()) {
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     items(state.landmarks, key = { it.id }) { landmark ->
-                        LandmarkCard(landmark = landmark, onClick = { selected = landmark })
+                        LandmarkCard(
+                            landmark = landmark,
+                            onClick = {
+                                val lat = landmark.lat
+                                val lon = landmark.lon
+                                if (lat != null && lon != null) {
+                                    focusTarget = GeoPoint(lat, lon)
+                                    focusNonce++
+                                } else {
+                                    selected = landmark
+                                }
+                            },
+                        )
                     }
                 }
             }
@@ -211,11 +233,15 @@ private fun OlaMap(
     location: GeoPoint?,
     landmarks: List<Landmark>,
     friends: List<FriendLocation>,
+    focusTarget: GeoPoint?,
+    focusNonce: Int,
+    onPlaceTap: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val mapView = rememberMapViewWithLifecycle()
     var map by remember { mutableStateOf<MapLibreMap?>(null) }
     var style by remember { mutableStateOf<Style?>(null) }
+    val currentOnPlaceTap by rememberUpdatedState(onPlaceTap)
 
     Box(modifier = modifier) {
         AndroidView(
@@ -227,6 +253,19 @@ private fun OlaMap(
                             setupMarkerLayers(loaded)
                             map = libreMap
                             style = loaded
+                        }
+                        // Tap a place pin -> open its detail.
+                        libreMap.addOnMapClickListener { latLng ->
+                            val screen = libreMap.projection.toScreenLocation(latLng)
+                            val hitBox = RectF(screen.x - 24f, screen.y - 24f, screen.x + 24f, screen.y + 24f)
+                            val title = libreMap.queryRenderedFeatures(hitBox, "places-circle")
+                                .firstOrNull()?.getStringProperty("title")
+                            if (title != null) {
+                                currentOnPlaceTap(title)
+                                true
+                            } else {
+                                false
+                            }
                         }
                     }
                 }
@@ -251,6 +290,14 @@ private fun OlaMap(
             .target(LatLng(point.lat, point.lon))
             .zoom(13.5)
             .build()
+    }
+
+    LaunchedEffect(focusNonce) {
+        val libreMap = map ?: return@LaunchedEffect
+        val target = focusTarget ?: return@LaunchedEffect
+        libreMap.animateCamera(
+            CameraUpdateFactory.newLatLngZoom(LatLng(target.lat, target.lon), 15.0),
+        )
     }
 
     LaunchedEffect(location, style) {
