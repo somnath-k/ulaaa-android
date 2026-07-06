@@ -4,6 +4,7 @@ import androidx.compose.ui.graphics.Color
 import com.dotkios.ulaaa.BuildConfig
 import com.dotkios.ulaaa.data.model.Landmark
 import com.dotkios.ulaaa.data.remote.GeoapifyApi
+import com.dotkios.ulaaa.data.remote.dto.GeoapifyProperties
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -31,8 +32,7 @@ class PlacesRepositoryImpl @Inject constructor(
             fetchFeatures(lat, lon, radius).takeIf { it.size >= MIN_PLACES }
         } ?: fetchFeatures(lat, lon, radii.last())
 
-        val base = features
-            .filter { !it.name.isNullOrBlank() }
+        val base = diversify(features.filter { !it.name.isNullOrBlank() })
             .mapIndexed { index, props ->
                 Landmark(
                     id = props.placeId ?: "geoapify-$index",
@@ -62,9 +62,21 @@ class PlacesRepositoryImpl @Inject constructor(
             categories = CATEGORIES,
             filter = "circle:$lon,$lat,$radiusMeters",
             bias = "proximity:$lon,$lat",
-            limit = 20,
+            limit = 40,
             apiKey = BuildConfig.GEOAPIFY_API_KEY,
         ).features.mapNotNull { it.properties }
+
+    /**
+     * Caps places of worship so temples don't crowd out other place types, then
+     * takes the nearest [MAX_RESULTS]. If everything nearby is a temple, keeps them.
+     */
+    private fun diversify(features: List<GeoapifyProperties>): List<GeoapifyProperties> {
+        val (worship, others) = features.partition { p ->
+            p.categories.any { it.startsWith("religion") }
+        }
+        val mixed = if (others.isEmpty()) worship else others + worship.take(MAX_WORSHIP)
+        return mixed.sortedBy { it.distance ?: Int.MAX_VALUE }.take(MAX_RESULTS)
+    }
 
     private fun String.prettyCategory(): String =
         substringAfterLast('.').replace('_', ' ').replaceFirstChar { it.uppercase() }
@@ -72,6 +84,10 @@ class PlacesRepositoryImpl @Inject constructor(
     private companion object {
         // Below this many places within a radius, widen the search.
         const val MIN_PLACES = 5
+
+        // How many places to show, and the cap on temples so they don't dominate.
+        const val MAX_RESULTS = 20
+        const val MAX_WORSHIP = 5
 
         // Broad enough to surface temples, parks & sights even in rural areas.
         const val CATEGORIES =
