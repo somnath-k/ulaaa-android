@@ -15,7 +15,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 
-enum class AuthField { NAME, EMAIL, PASSWORD }
+enum class AuthField { NAME, EMAIL, PASSWORD, PHONE }
 
 @Composable
 fun AuthTextField(
@@ -36,6 +36,10 @@ fun AuthTextField(
         )
         AuthField.PASSWORD -> KeyboardOptions(
             keyboardType = KeyboardType.Password,
+            imeAction = ImeAction.Done,
+        )
+        AuthField.PHONE -> KeyboardOptions(
+            keyboardType = KeyboardType.Phone,
             imeAction = ImeAction.Done,
         )
     }
