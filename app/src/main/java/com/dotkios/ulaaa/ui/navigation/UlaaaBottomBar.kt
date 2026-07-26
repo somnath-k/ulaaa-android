@@ -19,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.dotkios.ulaaa.ui.components.bounceClick
@@ -38,8 +39,13 @@ fun UlaaaBottomBar(
     Box(
         modifier = Modifier
             .fillMaxWidth()
+            .background(
+                Brush.verticalGradient(
+                    listOf(Color.Transparent, MaterialTheme.colorScheme.background),
+                ),
+            )
             .navigationBarsPadding()
-            .padding(horizontal = 28.dp, vertical = 12.dp),
+            .padding(start = 28.dp, end = 28.dp, top = 28.dp, bottom = 12.dp),
         contentAlignment = Alignment.Center,
     ) {
         Surface(
