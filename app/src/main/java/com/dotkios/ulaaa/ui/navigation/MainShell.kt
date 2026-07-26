@@ -17,6 +17,7 @@ import androidx.navigation.navArgument
 import com.dotkios.ulaaa.ui.bucketlist.BucketListScreen
 import com.dotkios.ulaaa.ui.chat.ChatScreen
 import com.dotkios.ulaaa.ui.curated.CuratedDetailScreen
+import com.dotkios.ulaaa.ui.feed.FeedScreen
 import com.dotkios.ulaaa.ui.friends.FriendsScreen
 import com.dotkios.ulaaa.ui.friends.InviteContactsScreen
 import com.dotkios.ulaaa.ui.home.HomeScreen
@@ -78,6 +79,7 @@ fun MainShell(onSignOut: () -> Unit) {
                     },
                 )
             }
+            composable(TopLevelDestination.FEED.route) { FeedScreen() }
             composable(TopLevelDestination.TRIPS.route) {
                 TripsScreen(
                     onCreateTrip = { navController.navigate(ROUTE_TRIP_CREATE) },

@@ -79,10 +79,6 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    val storyPicker = rememberLauncherForActivityResult(
-        ActivityResultContracts.PickVisualMedia(),
-    ) { uri -> uri?.let(viewModel::addStory) }
-
     HomeContent(
         state = state,
         onSeeAllTrips = onSeeAllTrips,
@@ -90,10 +86,6 @@ fun HomeScreen(
         onOpenMap = onOpenMap,
         onAskDot = onAskDot,
         onOpenCurated = onOpenCurated,
-        onAddStory = {
-            storyPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-        },
-        onToggleLike = viewModel::toggleLike,
     )
 }
 
@@ -106,8 +98,6 @@ private fun HomeContent(
     onOpenMap: () -> Unit,
     onAskDot: (String?) -> Unit,
     onOpenCurated: (com.dotkios.ulaaa.data.model.CuratedItinerary) -> Unit,
-    onAddStory: () -> Unit = {},
-    onToggleLike: (com.dotkios.ulaaa.data.model.Post) -> Unit = {},
 ) {
     if (state.isLoading) {
         Column(
@@ -126,22 +116,6 @@ private fun HomeContent(
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
         item { HomeHeader(name = state.userName, onOpenChat = { onAskDot(null) }) }
-
-        item { StoriesRow(stories = state.stories, onAddStory = onAddStory) }
-
-        if (state.feed.isNotEmpty()) {
-            item {
-                SectionTitle(title = "Squad Feed", actionLabel = null, onActionClick = null)
-            }
-            items(state.feed, key = { it.id }) { post ->
-                FeedCard(
-                    post = post,
-                    liked = post.likes.contains(state.currentUid),
-                    onToggleLike = { onToggleLike(post) },
-                    modifier = Modifier.padding(horizontal = 20.dp),
-                )
-            }
-        }
 
         item {
             Section(
@@ -431,197 +405,9 @@ private fun Section(
     }
 }
 
-@Composable
-private fun StoriesRow(stories: List<Post>, onAddStory: () -> Unit) {
-    LazyRow(
-        contentPadding = PaddingValues(horizontal = 20.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        item { AddStoryTile(onAddStory) }
-        items(stories, key = { it.id }) { post -> StoryTile(post) }
-    }
-}
-
-@Composable
-private fun AddStoryTile(onClick: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .width(72.dp)
-            .bounceClick(onClick),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        Box(
-            modifier = Modifier
-                .size(72.dp, 96.dp)
-                .clip(RoundedCornerShape(20.dp))
-                .background(MaterialTheme.colorScheme.surface)
-                .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(20.dp)),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(Icons.Filled.Add, contentDescription = "Add story", tint = MaterialTheme.colorScheme.primary)
-        }
-        Text(
-            "Add story",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-        )
-    }
-}
-
-@Composable
-private fun StoryTile(post: Post) {
-    Column(
-        modifier = Modifier.width(72.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        Box(
-            modifier = Modifier
-                .size(72.dp, 96.dp)
-                .clip(RoundedCornerShape(20.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-                .border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(20.dp)),
-        ) {
-            AsyncImage(
-                model = post.imageUrl,
-                contentDescription = post.authorName,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize(),
-            )
-        }
-        Text(
-            post.authorName.ifBlank { "Friend" },
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-    }
-}
-
-@Composable
-private fun FeedCard(
-    post: Post,
-    liked: Boolean,
-    onToggleLike: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
-    ) {
-        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Avatar(name = post.authorName, photoUrl = post.authorPhotoUrl)
-                Column {
-                    Text(
-                        post.authorName.ifBlank { "Explorer" },
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    Text(
-                        "shared a photo · ${relativeTime(post.createdAt)}",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-
-            AsyncImage(
-                model = post.imageUrl,
-                contentDescription = post.caption.ifBlank { "Post" },
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(1.2f)
-                    .clip(MaterialTheme.shapes.medium)
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
-            )
-
-            if (post.caption.isNotBlank()) {
-                Text(post.caption, style = MaterialTheme.typography.bodyMedium)
-            }
-
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(18.dp)) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    modifier = Modifier.bounceClick(onToggleLike),
-                ) {
-                    Icon(
-                        if (liked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                        contentDescription = "Like",
-                        tint = if (liked) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(22.dp),
-                    )
-                    if (post.likes.isNotEmpty()) {
-                        Text("${post.likes.size}", style = MaterialTheme.typography.labelMedium)
-                    }
-                }
-                Icon(
-                    Icons.Outlined.ChatBubbleOutline,
-                    contentDescription = "Comment",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(20.dp),
-                )
-                Icon(
-                    Icons.Outlined.Share,
-                    contentDescription = "Share",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(20.dp),
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun Avatar(name: String, photoUrl: String, size: Int = 40) {
-    Box(
-        modifier = Modifier
-            .size(size.dp)
-            .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.primary),
-        contentAlignment = Alignment.Center,
-    ) {
-        if (photoUrl.isNotBlank()) {
-            AsyncImage(
-                model = photoUrl,
-                contentDescription = name,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize(),
-            )
-        } else {
-            Text(
-                name.take(1).uppercase().ifBlank { "?" },
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onPrimary,
-            )
-        }
-    }
-}
-
 private fun greeting(): String = when (java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)) {
     in 5..11 -> "Good Morning"
     in 12..16 -> "Good Afternoon"
     in 17..20 -> "Good Evening"
     else -> "Good Night"
-}
-
-private fun relativeTime(timestamp: Long): String {
-    val diff = System.currentTimeMillis() - timestamp
-    val minutes = diff / 60_000
-    val hours = minutes / 60
-    val days = hours / 24
-    return when {
-        minutes < 1 -> "just now"
-        minutes < 60 -> "${minutes}m"
-        hours < 24 -> "${hours}h"
-        days < 7 -> "${days}d"
-        else -> "${days / 7}w"
-    }
 }

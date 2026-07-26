@@ -53,16 +53,18 @@ fun UlaaaBottomBar(
             color = PillDark,
             shadowElevation = 14.dp,
         ) {
+            // Center "+" splits the tabs into two halves.
+            val mid = tabs.size / 2
             Row(
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                PillItem(tabs[0], currentRoute, onSelect)
-                PillItem(tabs[1], currentRoute, onSelect)
-                CreatePill(onCreate)
-                PillItem(tabs[2], currentRoute, onSelect)
-                PillItem(tabs[3], currentRoute, onSelect)
+                tabs.take(mid).forEach { PillItem(it, currentRoute, onSelect, Modifier.weight(1f)) }
+                CreatePill(onCreate, Modifier.weight(1f))
+                tabs.drop(mid).forEach { PillItem(it, currentRoute, onSelect, Modifier.weight(1f)) }
             }
         }
     }
@@ -73,40 +75,45 @@ private fun PillItem(
     dest: TopLevelDestination,
     currentRoute: String?,
     onSelect: (TopLevelDestination) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val selected = currentRoute == dest.route
-    Box(
-        modifier = Modifier
-            .size(52.dp)
-            .clip(CircleShape)
-            .background(if (selected) MaterialTheme.colorScheme.primary else Color.Transparent)
-            .bounceClick { onSelect(dest) },
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(
-            imageVector = if (selected) dest.selectedIcon else dest.unselectedIcon,
-            contentDescription = dest.label,
-            tint = if (selected) MaterialTheme.colorScheme.onPrimary else PillIconIdle,
-            modifier = Modifier.size(24.dp),
-        )
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .clip(CircleShape)
+                .background(if (selected) MaterialTheme.colorScheme.primary else Color.Transparent)
+                .bounceClick { onSelect(dest) },
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = if (selected) dest.selectedIcon else dest.unselectedIcon,
+                contentDescription = dest.label,
+                tint = if (selected) MaterialTheme.colorScheme.onPrimary else PillIconIdle,
+                modifier = Modifier.size(23.dp),
+            )
+        }
     }
 }
 
 @Composable
-private fun CreatePill(onCreate: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .size(52.dp)
-            .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.secondary)
-            .bounceClick(onCreate),
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(
-            Icons.Filled.Add,
-            contentDescription = "Create trip",
-            tint = MaterialTheme.colorScheme.onSecondary,
-            modifier = Modifier.size(26.dp),
-        )
+private fun CreatePill(onCreate: () -> Unit, modifier: Modifier = Modifier) {
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.secondary)
+                .bounceClick(onCreate),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                Icons.Filled.Add,
+                contentDescription = "Create trip",
+                tint = MaterialTheme.colorScheme.onSecondary,
+                modifier = Modifier.size(25.dp),
+            )
+        }
     }
 }
