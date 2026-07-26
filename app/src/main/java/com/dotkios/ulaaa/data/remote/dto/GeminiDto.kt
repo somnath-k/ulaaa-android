@@ -64,3 +64,11 @@ data class LandmarkSuggestion(
     val detail: String = "",
     val distanceKm: Int = 0,
 )
+
+/** Weather outlook + travel concerns for a destination around the trip dates. */
+@Serializable
+data class TripAdviceDto(
+    val weather: String = "",
+    val bestTime: String = "",
+    val concerns: List<String> = emptyList(),
+)

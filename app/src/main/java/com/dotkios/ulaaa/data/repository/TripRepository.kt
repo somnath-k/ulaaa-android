@@ -24,6 +24,7 @@ interface TripRepository {
     fun trip(id: String): Flow<Trip?>
     /** Creates a trip and returns its id. */
     suspend fun addTrip(title: String, destination: String, startMillis: Long, endMillis: Long): String
+    suspend fun updateDates(id: String, startMillis: Long, endMillis: Long)
     suspend fun deleteTrip(id: String)
 }
 
@@ -96,6 +97,12 @@ class TripRepositoryImpl @Inject constructor(
         return doc.id
     }
 
+    override suspend fun updateDates(id: String, startMillis: Long, endMillis: Long) {
+        tripsCol.document(id).update(
+            mapOf("startMillis" to startMillis, "endMillis" to endMillis),
+        ).await()
+    }
+
     override suspend fun deleteTrip(id: String) {
         tripsCol.document(id).delete().await()
     }
@@ -113,6 +120,8 @@ class TripRepositoryImpl @Inject constructor(
             squadSize = memberCount,
             days = durationDays(start, end),
             accent = Color((getLong("colorArgb") ?: 0xFF0E7C7B).toInt()),
+            startMillis = start,
+            endMillis = end,
         )
     }
 

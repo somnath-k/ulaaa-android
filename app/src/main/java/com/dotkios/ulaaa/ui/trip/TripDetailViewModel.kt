@@ -9,9 +9,11 @@ import com.dotkios.ulaaa.data.model.Friend
 import com.dotkios.ulaaa.data.model.ItineraryStop
 import com.dotkios.ulaaa.data.model.SplitResult
 import com.dotkios.ulaaa.data.model.Trip
+import com.dotkios.ulaaa.data.model.TripAdvice
 import com.dotkios.ulaaa.data.model.TripMember
 import com.dotkios.ulaaa.data.repository.FriendRepository
 import com.dotkios.ulaaa.data.repository.ItineraryRepository
+import com.dotkios.ulaaa.data.repository.RecommendationRepository
 import com.dotkios.ulaaa.data.repository.TripDetailRepository
 import com.dotkios.ulaaa.data.repository.TripRepository
 import com.dotkios.ulaaa.domain.SplitCalculator
@@ -35,6 +37,10 @@ data class TripDetailUiState(
     val itinerary: List<ItineraryStop> = emptyList(),
     val isGeneratingItinerary: Boolean = false,
     val itineraryError: String? = null,
+    val suggestingChecklist: Boolean = false,
+    val advice: TripAdvice? = null,
+    val loadingAdvice: Boolean = false,
+    val adviceError: String? = null,
 )
 
 @HiltViewModel
@@ -43,6 +49,7 @@ class TripDetailViewModel @Inject constructor(
     private val tripRepository: TripRepository,
     private val detailRepository: TripDetailRepository,
     private val itineraryRepository: ItineraryRepository,
+    private val recommendationRepository: RecommendationRepository,
     friendRepository: FriendRepository,
 ) : ViewModel() {
 
@@ -58,19 +65,32 @@ class TripDetailViewModel @Inject constructor(
     private val itineraryStatus = MutableStateFlow(GenStatus())
     private data class GenStatus(val generating: Boolean = false, val error: String? = null)
 
+    private val suggestingChecklist = MutableStateFlow(false)
+    private data class AdviceStatus(
+        val advice: TripAdvice? = null,
+        val loading: Boolean = false,
+        val error: String? = null,
+    )
+    private val adviceStatus = MutableStateFlow(AdviceStatus())
+    private data class Extras(val itinerary: GenStatus, val suggesting: Boolean, val advice: AdviceStatus)
+
     private val contentFlow = combine(
         detailRepository.checklist(tripId),
         detailRepository.expenses(tripId),
         itineraryRepository.observe(tripId),
     ) { checklist, expenses, itinerary -> Content(checklist, expenses, itinerary) }
 
+    private val extrasFlow = combine(itineraryStatus, suggestingChecklist, adviceStatus) { i, s, a ->
+        Extras(i, s, a)
+    }
+
     val uiState: StateFlow<TripDetailUiState> = combine(
         tripRepository.trip(tripId),
         detailRepository.members(tripId),
         friendRepository.friends(),
         contentFlow,
-        itineraryStatus,
-    ) { trip, members, friends, content, status ->
+        extrasFlow,
+    ) { trip, members, friends, content, extras ->
         val memberUids = members.map { it.uid }.toSet()
         TripDetailUiState(
             trip = trip,
@@ -80,8 +100,12 @@ class TripDetailViewModel @Inject constructor(
             split = SplitCalculator.calculate(members.map { it.name }, content.expenses),
             addableFriends = friends.filter { it.uid !in memberUids },
             itinerary = content.itinerary,
-            isGeneratingItinerary = status.generating,
-            itineraryError = status.error,
+            isGeneratingItinerary = extras.itinerary.generating,
+            itineraryError = extras.itinerary.error,
+            suggestingChecklist = extras.suggesting,
+            advice = extras.advice.advice,
+            loadingAdvice = extras.advice.loading,
+            adviceError = extras.advice.error,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -95,6 +119,37 @@ class TripDetailViewModel @Inject constructor(
     fun addChecklistItem(text: String) = launch { detailRepository.addChecklistItem(tripId, text) }
     fun toggleChecklist(id: String, done: Boolean) = launch { detailRepository.setChecklistDone(tripId, id, done) }
     fun deleteChecklistItem(id: String) = launch { detailRepository.deleteChecklistItem(tripId, id) }
+
+    /** Ask Gemini for packing/checklist items and append the ones not already listed. */
+    fun suggestChecklist() {
+        val trip = uiState.value.trip ?: return
+        if (suggestingChecklist.value) return
+        suggestingChecklist.value = true
+        viewModelScope.launch {
+            val existing = uiState.value.checklist.map { it.text.lowercase() }.toSet()
+            recommendationRepository.suggestChecklist(trip.destination, trip.days)
+                .onSuccess { items ->
+                    items.filter { it.lowercase() !in existing }
+                        .forEach { detailRepository.addChecklistItem(tripId, it) }
+                }
+            suggestingChecklist.value = false
+        }
+    }
+
+    /** Update the trip's dates (and therefore its day count). */
+    fun updateDates(startMillis: Long, endMillis: Long) =
+        launch { tripRepository.updateDates(tripId, startMillis, endMillis) }
+
+    fun loadAdvice() {
+        val trip = uiState.value.trip ?: return
+        if (adviceStatus.value.loading) return
+        adviceStatus.value = AdviceStatus(loading = true)
+        viewModelScope.launch {
+            recommendationRepository.tripAdvice(trip.destination, trip.dateRange)
+                .onSuccess { adviceStatus.value = AdviceStatus(advice = it) }
+                .onFailure { e -> adviceStatus.value = AdviceStatus(error = e.message ?: "Couldn't load weather & tips") }
+        }
+    }
 
     fun addExpense(title: String, amount: Double, paidBy: String) =
         launch { detailRepository.addExpense(tripId, title, amount, paidBy) }

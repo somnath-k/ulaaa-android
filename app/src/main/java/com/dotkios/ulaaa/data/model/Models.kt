@@ -12,6 +12,15 @@ data class Trip(
     val days: Int,
     val accent: Color,
     val imageUrl: String? = null,
+    val startMillis: Long = 0L,
+    val endMillis: Long = 0L,
+)
+
+/** AI weather outlook + concerns for a trip's destination and dates. */
+data class TripAdvice(
+    val weather: String,
+    val bestTime: String,
+    val concerns: List<String>,
 )
 
 /** A discoverable place / point of interest. */

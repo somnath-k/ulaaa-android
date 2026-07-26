@@ -5,6 +5,7 @@ import com.dotkios.ulaaa.BuildConfig
 import com.dotkios.ulaaa.data.model.CuratedItinerary
 import com.dotkios.ulaaa.data.model.ItineraryStop
 import com.dotkios.ulaaa.data.model.Landmark
+import com.dotkios.ulaaa.data.model.TripAdvice
 import com.dotkios.ulaaa.data.remote.GeminiApi
 import com.dotkios.ulaaa.data.remote.dto.GeminiContent
 import com.dotkios.ulaaa.data.remote.dto.GeminiGenerationConfig
@@ -13,6 +14,7 @@ import com.dotkios.ulaaa.data.remote.dto.GeminiRequest
 import com.dotkios.ulaaa.data.remote.dto.ItineraryStopSuggestion
 import com.dotkios.ulaaa.data.remote.dto.ItinerarySuggestion
 import com.dotkios.ulaaa.data.remote.dto.LandmarkSuggestion
+import com.dotkios.ulaaa.data.remote.dto.TripAdviceDto
 import kotlinx.serialization.json.Json
 import java.util.UUID
 import javax.inject.Inject
@@ -27,6 +29,12 @@ interface RecommendationRepository {
 
     /** Ready-made day-by-day itinerary for a destination (in-memory preview, not saved). */
     suspend fun itineraryFor(destination: String, days: Int): Result<List<ItineraryStop>>
+
+    /** AI-suggested packing/checklist items for a trip. */
+    suspend fun suggestChecklist(destination: String, days: Int): Result<List<String>>
+
+    /** Weather outlook + travel concerns for [destination] around [dateRange]. */
+    suspend fun tripAdvice(destination: String, dateRange: String): Result<TripAdvice>
 }
 
 @Singleton
@@ -101,6 +109,44 @@ class RecommendationRepositoryImpl @Inject constructor(
                     cost = s.cost,
                 )
             }
+    }
+
+    override suspend fun suggestChecklist(destination: String, days: Int): Result<List<String>> = runCatching {
+        val prompt = buildString {
+            append("List 10 essential packing and to-do checklist items for a ")
+            append("$days-day trip to $destination. Consider the typical weather and common ")
+            append("activities there. Respond ONLY with a JSON array of short strings ")
+            append("(each max 5 words, e.g. \"Sunscreen\", \"Power bank\").")
+        }
+        val text = generateText(prompt, temperature = 0.7)
+        json.decodeFromString<List<String>>(text).map { it.trim() }.filter { it.isNotBlank() }.take(15)
+    }
+
+    override suspend fun tripAdvice(destination: String, dateRange: String): Result<TripAdvice> = runCatching {
+        val prompt = buildString {
+            append("A traveller is visiting $destination during: $dateRange. ")
+            append("Give the typical weather to expect then, the best time of day for activities, ")
+            append("and travel concerns or advisories to keep in mind. ")
+            append("Respond ONLY as a JSON object with keys: ")
+            append("\"weather\" (1-2 sentences), \"bestTime\" (short phrase), ")
+            append("\"concerns\" (array of 3-5 short strings).")
+        }
+        val text = generateText(prompt, temperature = 0.6)
+        val dto = json.decodeFromString<TripAdviceDto>(text)
+        TripAdvice(weather = dto.weather, bestTime = dto.bestTime, concerns = dto.concerns)
+    }
+
+    private suspend fun generateText(prompt: String, temperature: Double): String {
+        val response = api.generate(
+            model = GeminiApi.MODEL,
+            apiKey = BuildConfig.GEMINI_API_KEY,
+            body = GeminiRequest(
+                contents = listOf(GeminiContent(listOf(GeminiPart(prompt)))),
+                generationConfig = GeminiGenerationConfig(responseMimeType = "application/json", temperature = temperature),
+            ),
+        )
+        return response.candidates.firstOrNull()?.content?.parts?.firstNotNullOfOrNull { it.text }
+            ?: error("Gemini returned no content")
     }
 
     override suspend fun nearbyLandmarks(place: String): Result<List<Landmark>> = runCatching {

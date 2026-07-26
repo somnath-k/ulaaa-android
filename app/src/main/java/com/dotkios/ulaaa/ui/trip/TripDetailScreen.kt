@@ -16,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.AlertDialog
@@ -25,8 +26,10 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DatePicker
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -92,9 +95,16 @@ fun TripDetailScreen(
         ) {
             state.trip?.let { trip ->
                 Text(
-                    text = "${trip.destination} · ${trip.dateRange}",
+                    text = trip.destination,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                DatesSection(trip = trip, onUpdateDates = viewModel::updateDates)
+                AdviceSection(
+                    advice = state.advice,
+                    loading = state.loadingAdvice,
+                    error = state.adviceError,
+                    onLoad = viewModel::loadAdvice,
                 )
             }
 
@@ -117,7 +127,9 @@ fun TripDetailScreen(
 
             ChecklistSection(
                 items = state.checklist,
+                suggesting = state.suggestingChecklist,
                 onAdd = viewModel::addChecklistItem,
+                onSuggest = viewModel::suggestChecklist,
                 onToggle = viewModel::toggleChecklist,
                 onDelete = viewModel::deleteChecklistItem,
             )
@@ -421,12 +433,21 @@ private fun AddStopDialog(
 @Composable
 private fun ChecklistSection(
     items: List<ChecklistItem>,
+    suggesting: Boolean,
     onAdd: (String) -> Unit,
+    onSuggest: () -> Unit,
     onToggle: (String, Boolean) -> Unit,
     onDelete: (String) -> Unit,
 ) {
     var input by remember { mutableStateOf("") }
     SectionCard(title = "Checklist") {
+        if (items.isEmpty() && !suggesting) {
+            Text(
+                "Nothing packed yet. Add items, or let Dot suggest essentials for your trip.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         items.forEach { item ->
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Checkbox(
@@ -464,6 +485,135 @@ private fun ChecklistSection(
                 enabled = input.isNotBlank(),
             ) {
                 Icon(Icons.Filled.Add, contentDescription = "Add item", tint = MaterialTheme.colorScheme.primary)
+            }
+        }
+        AssistChip(
+            onClick = onSuggest,
+            enabled = !suggesting,
+            label = { Text(if (suggesting) "Suggesting…" else "Suggest with AI") },
+            leadingIcon = {
+                if (suggesting) {
+                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                } else {
+                    Icon(Icons.Outlined.AutoAwesome, contentDescription = null)
+                }
+            },
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DatesSection(trip: com.dotkios.ulaaa.data.model.Trip, onUpdateDates: (Long, Long) -> Unit) {
+    var showEditor by remember { mutableStateOf(false) }
+    SectionCard(title = "Dates & duration") {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Column {
+                Text(trip.dateRange, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                Text(
+                    "${trip.days} ${if (trip.days == 1) "day" else "days"}",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            TextButton(onClick = { showEditor = true }) { Text("Edit") }
+        }
+    }
+    if (showEditor) {
+        DatesEditorDialog(
+            initialStart = trip.startMillis.takeIf { it > 0 } ?: System.currentTimeMillis(),
+            initialDays = trip.days.coerceAtLeast(1),
+            onDismiss = { showEditor = false },
+            onConfirm = { start, days ->
+                val end = start + (days - 1).coerceAtLeast(0) * 86_400_000L
+                onUpdateDates(start, end)
+                showEditor = false
+            },
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DatesEditorDialog(
+    initialStart: Long,
+    initialDays: Int,
+    onDismiss: () -> Unit,
+    onConfirm: (startMillis: Long, days: Int) -> Unit,
+) {
+    val dateState = rememberDatePickerState(initialSelectedDateMillis = initialStart)
+    var daysText by remember { mutableStateOf(initialDays.toString()) }
+    val days = daysText.toIntOrNull()?.coerceAtLeast(1) ?: initialDays
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Edit dates") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text("Start date", style = MaterialTheme.typography.labelLarge)
+                DatePicker(state = dateState, title = null, headline = null, showModeToggle = false)
+                OutlinedTextField(
+                    value = daysText,
+                    onValueChange = { daysText = it.filter(Char::isDigit).take(2) },
+                    label = { Text("Number of days") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(dateState.selectedDateMillis ?: initialStart, days) },
+                enabled = dateState.selectedDateMillis != null,
+            ) { Text("Save") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
+}
+
+@Composable
+private fun AdviceSection(
+    advice: com.dotkios.ulaaa.data.model.TripAdvice?,
+    loading: Boolean,
+    error: String?,
+    onLoad: () -> Unit,
+) {
+    SectionCard(title = "Weather & concerns") {
+        when {
+            loading -> Row(verticalAlignment = Alignment.CenterVertically) {
+                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                Text("Checking the forecast…", modifier = Modifier.padding(start = 12.dp), style = MaterialTheme.typography.bodyMedium)
+            }
+
+            advice != null -> {
+                if (advice.weather.isNotBlank()) {
+                    Text("🌤  ${advice.weather}", style = MaterialTheme.typography.bodyMedium)
+                }
+                if (advice.bestTime.isNotBlank()) {
+                    Text(
+                        "Best time · ${advice.bestTime}",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+                advice.concerns.forEach { concern ->
+                    Text("•  $concern", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                TextButton(onClick = onLoad) { Text("Refresh") }
+            }
+
+            else -> {
+                error?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error) }
+                AssistChip(
+                    onClick = onLoad,
+                    label = { Text("Get weather & tips") },
+                    leadingIcon = { Icon(Icons.Outlined.AutoAwesome, contentDescription = null) },
+                )
             }
         }
     }
@@ -509,8 +659,7 @@ private fun ExpensesSection(
 
         AssistChip(
             onClick = { showDialog = true },
-            enabled = members.isNotEmpty(),
-            label = { Text(if (members.isEmpty()) "Add friends first" else "Add expense") },
+            label = { Text("Add expense") },
             leadingIcon = { Icon(Icons.Filled.Add, contentDescription = null) },
         )
     }
@@ -556,9 +705,11 @@ private fun AddExpenseDialog(
     onDismiss: () -> Unit,
     onConfirm: (title: String, amount: Double, paidBy: String) -> Unit,
 ) {
+    // Fall back to "Me" so expenses can be tracked before any friends are added.
+    val payers = members.map { it.name }.ifEmpty { listOf("Me") }
     var title by remember { mutableStateOf("") }
     var amountText by remember { mutableStateOf("") }
-    var paidBy by remember { mutableStateOf(members.firstOrNull()?.name ?: "") }
+    var paidBy by remember { mutableStateOf(payers.first()) }
     val amount = amountText.toDoubleOrNull() ?: 0.0
 
     AlertDialog(
@@ -583,11 +734,11 @@ private fun AddExpenseDialog(
                 )
                 Text("Paid by", style = MaterialTheme.typography.labelLarge)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    members.forEach { member ->
+                    payers.forEach { payer ->
                         FilterChip(
-                            selected = paidBy == member.name,
-                            onClick = { paidBy = member.name },
-                            label = { Text(member.name) },
+                            selected = paidBy == payer,
+                            onClick = { paidBy = payer },
+                            label = { Text(payer) },
                         )
                     }
                 }
