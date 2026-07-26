@@ -33,7 +33,7 @@ fun TripCard(
         modifier = modifier.width(280.dp),
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
     ) {
         CardImage(
             accent = trip.accent,
@@ -42,7 +42,7 @@ fun TripCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(140.dp)
-                .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)),
+                .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)),
         ) {
             Text(
                 text = trip.destination,

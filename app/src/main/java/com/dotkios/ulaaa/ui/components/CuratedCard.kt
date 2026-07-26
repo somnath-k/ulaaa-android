@@ -31,7 +31,7 @@ fun CuratedCard(
         onClick = { onClick(itinerary) },
         modifier = modifier.width(220.dp),
         shape = MaterialTheme.shapes.large,
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
     ) {
         CardImage(
             accent = itinerary.accent,

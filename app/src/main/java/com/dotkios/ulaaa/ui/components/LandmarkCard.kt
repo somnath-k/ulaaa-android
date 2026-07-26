@@ -39,7 +39,7 @@ fun LandmarkCard(
         modifier = modifier.width(160.dp),
         shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
     ) {
         CardImage(
             imageUrl = landmark.imageUrl,
@@ -47,7 +47,7 @@ fun LandmarkCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(110.dp)
-                .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
+                .clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)),
         )
         Column(modifier = Modifier.padding(12.dp)) {
             Text(
