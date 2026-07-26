@@ -109,7 +109,18 @@ class ProfileViewModel @Inject constructor(
             val postId = postRepository.newPostId()
             mediaRepository.uploadPostImage(id, postId, image)
                 .onSuccess { url ->
-                    postRepository.addPost(id, url, caption, postId)
+                    val current = _uiState.value
+                    postRepository.addPost(
+                        Post(
+                            id = postId,
+                            uid = id,
+                            authorName = current.name,
+                            authorPhotoUrl = current.photoUrl,
+                            imageUrl = url,
+                            caption = caption.trim(),
+                            createdAt = System.currentTimeMillis(),
+                        ),
+                    )
                     _uiState.update { it.copy(posting = false) }
                 }
                 .onFailure { e ->

@@ -62,6 +62,7 @@ fun MainShell(onSignOut: () -> Unit) {
                     onSeeAllTrips = { navController.selectTab(TopLevelDestination.TRIPS) },
                     onCreateTrip = { navController.navigate(ROUTE_TRIP_CREATE) },
                     onOpenMap = { navController.selectTab(TopLevelDestination.MAP) },
+                    onAddStory = { navController.selectTab(TopLevelDestination.PROFILE) },
                     onAskDot = { prompt ->
                         val route = if (prompt.isNullOrBlank()) {
                             ROUTE_CHAT

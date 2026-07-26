@@ -3,11 +3,15 @@ package com.dotkios.ulaaa.ui.home
 import com.dotkios.ulaaa.data.model.Category
 import com.dotkios.ulaaa.data.model.CuratedItinerary
 import com.dotkios.ulaaa.data.model.Landmark
+import com.dotkios.ulaaa.data.model.Post
 import com.dotkios.ulaaa.data.model.Trip
 
 data class HomeUiState(
     val isLoading: Boolean = true,
     val userName: String = "Explorer",
+    val currentUid: String = "",
+    val feed: List<Post> = emptyList(),
+    val stories: List<Post> = emptyList(),
     val trips: List<Trip> = emptyList(),
     val curated: List<CuratedItinerary> = emptyList(),
     val curatedLoading: Boolean = true,
