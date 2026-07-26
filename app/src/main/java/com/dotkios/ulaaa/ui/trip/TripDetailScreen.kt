@@ -678,18 +678,54 @@ private fun ExpensesSection(
 
 @Composable
 private fun SettleUp(split: SplitResult) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(
             "Total ${money(split.total)} · ${money(split.perPerson)} each",
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.primary,
+        )
+
+        // Per-person: what they paid vs their equal share, and the net.
+        split.balances.forEach { (name, net) ->
+            val paid = net + split.perPerson
+            val status = when {
+                net > 0.01 -> "gets back ${money(net)}"
+                net < -0.01 -> "owes ${money(-net)}"
+                else -> "settled"
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    "$name · paid ${money(paid)}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    status,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = when {
+                        net > 0.01 -> MaterialTheme.colorScheme.primary
+                        net < -0.01 -> MaterialTheme.colorScheme.error
+                        else -> MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                )
+            }
+        }
+
+        Text(
+            "Settle up",
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(top = 4.dp),
         )
         if (split.settlements.isEmpty()) {
             Text("All settled up 🎉", style = MaterialTheme.typography.bodyMedium)
         } else {
             split.settlements.forEach { s ->
                 Text(
-                    "${s.from} pays ${s.to} ${money(s.amount)}",
+                    "${s.from} → pays ${s.to} ${money(s.amount)}",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
