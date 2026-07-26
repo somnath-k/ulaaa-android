@@ -78,7 +78,7 @@ fun ProfileScreen(
     LazyVerticalGrid(
         columns = GridCells.Fixed(3),
         modifier = Modifier.fillMaxSize(),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(4.dp),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 4.dp, end = 4.dp, top = 4.dp, bottom = 110.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {

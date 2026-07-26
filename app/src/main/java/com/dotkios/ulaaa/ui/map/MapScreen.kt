@@ -149,7 +149,7 @@ fun MapScreen(viewModel: MapViewModel = hiltViewModel()) {
                 modifier = Modifier
                     .align(Alignment.BottomStart)
                     .fillMaxWidth()
-                    .padding(bottom = 16.dp),
+                    .padding(bottom = 100.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Text(

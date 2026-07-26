@@ -112,7 +112,7 @@ private fun HomeContent(
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 24.dp),
+        contentPadding = PaddingValues(bottom = 110.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
         item { HomeHeader(name = state.userName, onOpenChat = { onAskDot(null) }) }

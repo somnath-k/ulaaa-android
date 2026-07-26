@@ -62,7 +62,7 @@ fun FeedScreen(viewModel: FeedViewModel = hiltViewModel()) {
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 24.dp),
+        contentPadding = PaddingValues(bottom = 110.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {

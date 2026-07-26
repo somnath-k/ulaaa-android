@@ -1,10 +1,11 @@
 package com.dotkios.ulaaa.ui.navigation
 
 import android.net.Uri
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
@@ -44,18 +45,13 @@ fun MainShell(onSignOut: () -> Unit) {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
 
-    Scaffold(
-        bottomBar = {
-            UlaaaBottomBar(
-                currentRoute = currentRoute,
-                onSelect = { dest -> navController.selectTab(dest) },
-            )
-        },
-    ) { innerPadding ->
+    // Floating nav overlays content (no reserved white band); shown only on tab screens.
+    val onTopLevel = TopLevelDestination.entries.any { it.route == currentRoute }
+    Box(modifier = Modifier.fillMaxSize()) {
         NavHost(
             navController = navController,
             startDestination = TopLevelDestination.START.route,
-            modifier = Modifier.padding(innerPadding),
+            modifier = Modifier.fillMaxSize(),
         ) {
             composable(TopLevelDestination.HOME.route) {
                 HomeScreen(
@@ -157,6 +153,14 @@ fun MainShell(onSignOut: () -> Unit) {
             composable(ROUTE_INVITE_CONTACTS) {
                 InviteContactsScreen(onBack = { navController.popBackStack() })
             }
+        }
+
+        if (onTopLevel) {
+            UlaaaBottomBar(
+                currentRoute = currentRoute,
+                onSelect = { dest -> navController.selectTab(dest) },
+                modifier = Modifier.align(Alignment.BottomCenter),
+            )
         }
     }
 }

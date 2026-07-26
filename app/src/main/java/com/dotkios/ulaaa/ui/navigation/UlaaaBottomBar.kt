@@ -17,7 +17,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.dotkios.ulaaa.ui.components.bounceClick
@@ -31,18 +30,14 @@ private val PillIconIdle = Color(0xFFB7C4BF)
 fun UlaaaBottomBar(
     currentRoute: String?,
     onSelect: (TopLevelDestination) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val tabs = TopLevelDestination.entries
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .background(
-                Brush.verticalGradient(
-                    listOf(Color.Transparent, MaterialTheme.colorScheme.background),
-                ),
-            )
             .navigationBarsPadding()
-            .padding(start = 40.dp, end = 40.dp, top = 28.dp, bottom = 12.dp),
+            .padding(start = 40.dp, end = 40.dp, top = 8.dp, bottom = 12.dp),
         contentAlignment = Alignment.Center,
     ) {
         Surface(

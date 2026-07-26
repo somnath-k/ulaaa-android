@@ -98,7 +98,7 @@ fun TripsScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding),
-                contentPadding = PaddingValues(20.dp),
+                contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 110.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 items(trips, key = { it.id }) { trip ->
