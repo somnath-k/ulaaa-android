@@ -278,16 +278,17 @@ private fun HomeHeader(name: String, onOpenChat: () -> Unit) {
             }
         }
 
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
             Text(
-                text = "Hey, $name 👋",
-                style = MaterialTheme.typography.displayMedium,
-                color = MaterialTheme.colorScheme.onBackground,
+                text = "${greeting()},",
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
-                text = "Where to next?",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                text = "$name 👋",
+                style = MaterialTheme.typography.displayMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground,
             )
         }
 
@@ -594,6 +595,13 @@ private fun Avatar(name: String, photoUrl: String, size: Int = 40) {
             )
         }
     }
+}
+
+private fun greeting(): String = when (java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)) {
+    in 5..11 -> "Good Morning"
+    in 12..16 -> "Good Afternoon"
+    in 17..20 -> "Good Evening"
+    else -> "Good Night"
 }
 
 private fun relativeTime(timestamp: Long): String {
