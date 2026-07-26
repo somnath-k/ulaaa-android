@@ -19,6 +19,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.LocationOn
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -26,6 +27,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -39,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dotkios.ulaaa.data.model.Trip
+import com.dotkios.ulaaa.data.model.TripInvite
 import com.dotkios.ulaaa.ui.components.AvatarGroup
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -50,6 +53,7 @@ fun TripsScreen(
     viewModel: TripsViewModel = hiltViewModel(),
 ) {
     val trips by viewModel.trips.collectAsStateWithLifecycle()
+    val invites by viewModel.invites.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -73,7 +77,7 @@ fun TripsScreen(
             }
         },
     ) { padding ->
-        if (trips.isEmpty()) {
+        if (trips.isEmpty() && invites.isEmpty()) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -101,6 +105,22 @@ fun TripsScreen(
                 contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 110.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
+                if (invites.isNotEmpty()) {
+                    item {
+                        Text(
+                            "Invitations",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+                    items(invites, key = { "inv-${it.tripId}" }) { invite ->
+                        InviteRow(
+                            invite = invite,
+                            onAccept = { viewModel.accept(invite) },
+                            onDecline = { viewModel.decline(invite) },
+                        )
+                    }
+                }
                 items(trips, key = { it.id }) { trip ->
                     TripRow(
                         trip = trip,
@@ -108,6 +128,41 @@ fun TripsScreen(
                         onDelete = { viewModel.delete(trip.id) },
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun InviteRow(invite: TripInvite, onAccept: () -> Unit, onDecline: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Text(
+                invite.tripTitle.ifBlank { "A trip" },
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+            )
+            Text(
+                buildString {
+                    if (invite.destination.isNotBlank()) append(invite.destination).append(" · ")
+                    append("${invite.fromName.ifBlank { "Someone" }} invited you")
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 10.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Button(onClick = onAccept, modifier = Modifier.weight(1f)) { Text("Accept") }
+                OutlinedButton(onClick = onDecline, modifier = Modifier.weight(1f)) { Text("Decline") }
             }
         }
     }

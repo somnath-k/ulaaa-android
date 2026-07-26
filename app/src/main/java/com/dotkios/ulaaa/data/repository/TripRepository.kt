@@ -84,6 +84,7 @@ class TripRepositoryImpl @Inject constructor(
         doc.set(
             mapOf(
                 "ownerId" to user.uid,
+                "ownerName" to name,
                 "title" to title.trim(),
                 "destination" to destination.trim(),
                 "startMillis" to startMillis,
@@ -122,6 +123,8 @@ class TripRepositoryImpl @Inject constructor(
             accent = Color((getLong("colorArgb") ?: 0xFF0E7C7B).toInt()),
             startMillis = start,
             endMillis = end,
+            ownerId = getString("ownerId").orEmpty(),
+            ownerName = getString("ownerName").orEmpty(),
         )
     }
 

@@ -14,6 +14,18 @@ data class Trip(
     val imageUrl: String? = null,
     val startMillis: Long = 0L,
     val endMillis: Long = 0L,
+    val ownerId: String = "",
+    val ownerName: String = "",
+)
+
+/** A pending invitation for the current user to join someone's trip. */
+data class TripInvite(
+    val tripId: String = "",
+    val tripTitle: String = "",
+    val destination: String = "",
+    val fromName: String = "",
+    val fromUid: String = "",
+    val at: Long = 0L,
 )
 
 /** AI weather outlook + concerns for a trip's destination and dates. */

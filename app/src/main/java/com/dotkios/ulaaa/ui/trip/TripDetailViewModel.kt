@@ -11,6 +11,7 @@ import com.dotkios.ulaaa.data.model.SplitResult
 import com.dotkios.ulaaa.data.model.Trip
 import com.dotkios.ulaaa.data.model.TripAdvice
 import com.dotkios.ulaaa.data.model.TripMember
+import com.dotkios.ulaaa.data.repository.AuthRepository
 import com.dotkios.ulaaa.data.repository.FriendRepository
 import com.dotkios.ulaaa.data.repository.ItineraryRepository
 import com.dotkios.ulaaa.data.repository.RecommendationRepository
@@ -29,6 +30,7 @@ import javax.inject.Inject
 data class TripDetailUiState(
     val trip: Trip? = null,
     val members: List<TripMember> = emptyList(),
+    val invited: List<TripMember> = emptyList(),
     val checklist: List<ChecklistItem> = emptyList(),
     val expenses: List<Expense> = emptyList(),
     val split: SplitResult = SplitResult(0.0, 0.0, emptyMap(), emptyList()),
@@ -50,15 +52,19 @@ class TripDetailViewModel @Inject constructor(
     private val detailRepository: TripDetailRepository,
     private val itineraryRepository: ItineraryRepository,
     private val recommendationRepository: RecommendationRepository,
+    private val authRepository: AuthRepository,
     friendRepository: FriendRepository,
 ) : ViewModel() {
 
     private val tripId: String = checkNotNull(savedStateHandle["tripId"])
+    private val myName: String =
+        authRepository.currentUser?.displayName?.takeIf { it.isNotBlank() } ?: "Me"
 
     private data class Content(
         val checklist: List<ChecklistItem>,
         val expenses: List<Expense>,
         val itinerary: List<ItineraryStop>,
+        val invited: List<TripMember>,
     )
 
     // Transient generation status (not persisted).
@@ -78,7 +84,8 @@ class TripDetailViewModel @Inject constructor(
         detailRepository.checklist(tripId),
         detailRepository.expenses(tripId),
         itineraryRepository.observe(tripId),
-    ) { checklist, expenses, itinerary -> Content(checklist, expenses, itinerary) }
+        detailRepository.tripInvites(tripId),
+    ) { checklist, expenses, itinerary, invited -> Content(checklist, expenses, itinerary, invited) }
 
     private val extrasFlow = combine(itineraryStatus, suggestingChecklist, adviceStatus) { i, s, a ->
         Extras(i, s, a)
@@ -92,13 +99,15 @@ class TripDetailViewModel @Inject constructor(
         extrasFlow,
     ) { trip, members, friends, content, extras ->
         val memberUids = members.map { it.uid }.toSet()
+        val invitedUids = content.invited.map { it.uid }.toSet()
         TripDetailUiState(
             trip = trip,
             members = members,
+            invited = content.invited,
             checklist = content.checklist,
             expenses = content.expenses,
             split = SplitCalculator.calculate(members.map { it.name }, content.expenses),
-            addableFriends = friends.filter { it.uid !in memberUids },
+            addableFriends = friends.filter { it.uid !in memberUids && it.uid !in invitedUids },
             itinerary = content.itinerary,
             isGeneratingItinerary = extras.itinerary.generating,
             itineraryError = extras.itinerary.error,
@@ -113,7 +122,13 @@ class TripDetailViewModel @Inject constructor(
         initialValue = TripDetailUiState(),
     )
 
-    fun addMember(friend: Friend) = launch { detailRepository.addMember(tripId, friend.uid, friend.name) }
+    /** Sends a join request; the friend becomes a member only after accepting. */
+    fun inviteMember(friend: Friend) = launch {
+        val trip = uiState.value.trip ?: return@launch
+        detailRepository.invite(tripId, trip.title, trip.destination, myName, friend.uid, friend.name)
+    }
+
+    fun cancelInvite(uid: String) = launch { detailRepository.cancelInvite(tripId, uid) }
     fun deleteMember(id: String) = launch { detailRepository.deleteMember(tripId, id) }
 
     fun addChecklistItem(text: String) = launch { detailRepository.addChecklistItem(tripId, text) }

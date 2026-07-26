@@ -99,6 +99,13 @@ fun TripDetailScreen(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                if (trip.ownerName.isNotBlank()) {
+                    Text(
+                        text = "Created by ${trip.ownerName}",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
                 DatesSection(trip = trip, onUpdateDates = viewModel::updateDates)
                 AdviceSection(
                     advice = state.advice,
@@ -120,8 +127,10 @@ fun TripDetailScreen(
 
             MembersSection(
                 members = state.members,
+                invited = state.invited,
                 addableFriends = state.addableFriends,
-                onAdd = viewModel::addMember,
+                onInvite = viewModel::inviteMember,
+                onCancelInvite = viewModel::cancelInvite,
                 onRemove = viewModel::deleteMember,
             )
 
@@ -166,15 +175,17 @@ private fun SectionCard(title: String, content: @Composable () -> Unit) {
 @Composable
 private fun MembersSection(
     members: List<TripMember>,
+    invited: List<TripMember>,
     addableFriends: List<Friend>,
-    onAdd: (Friend) -> Unit,
+    onInvite: (Friend) -> Unit,
+    onCancelInvite: (String) -> Unit,
     onRemove: (String) -> Unit,
 ) {
     var showPicker by remember { mutableStateOf(false) }
     SectionCard(title = "Squad (${members.size})") {
         if (members.isEmpty()) {
             Text(
-                "Add friends to split expenses with.",
+                "Invite friends to join. They're added once they accept.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -189,9 +200,25 @@ private fun MembersSection(
             }
             AssistChip(
                 onClick = { showPicker = true },
-                label = { Text("Add friend") },
+                label = { Text("Invite friend") },
                 leadingIcon = { Icon(Icons.Filled.Add, contentDescription = null) },
             )
+        }
+        if (invited.isNotEmpty()) {
+            Text(
+                "Pending invites",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                invited.forEach { person ->
+                    AssistChip(
+                        onClick = { onCancelInvite(person.uid) },
+                        label = { Text("${person.name} · invited") },
+                        trailingIcon = { Icon(Icons.Outlined.Close, contentDescription = "Cancel invite") },
+                    )
+                }
+            }
         }
     }
     if (showPicker) {
@@ -199,7 +226,7 @@ private fun MembersSection(
             friends = addableFriends,
             onDismiss = { showPicker = false },
             onPick = {
-                onAdd(it)
+                onInvite(it)
                 showPicker = false
             },
         )
@@ -214,10 +241,10 @@ private fun FriendPickerDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Add from friends") },
+        title = { Text("Invite from friends") },
         text = {
             if (friends.isEmpty()) {
-                Text("No friends to add. Add friends from Profile → Friends first.")
+                Text("No friends to invite. Add friends from Profile → Friends first.")
             } else {
                 Column {
                     friends.forEach { friend ->
