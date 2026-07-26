@@ -74,7 +74,7 @@ import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.Style
 import org.maplibre.android.style.expressions.Expression
-import org.maplibre.android.style.layers.CircleLayer
+import org.maplibre.android.style.layers.Property
 import org.maplibre.android.style.layers.PropertyFactory
 import org.maplibre.android.style.layers.SymbolLayer
 import org.maplibre.android.style.sources.GeoJsonSource
@@ -287,6 +287,7 @@ private fun OlaMap(
     modifier: Modifier = Modifier,
 ) {
     val mapView = rememberMapViewWithLifecycle()
+    val context = LocalContext.current
     var map by remember { mutableStateOf<MapLibreMap?>(null) }
     var style by remember { mutableStateOf<Style?>(null) }
     val currentOnPlaceTap by rememberUpdatedState(onPlaceTap)
@@ -305,8 +306,8 @@ private fun OlaMap(
                         // Tap a place pin -> open its detail.
                         libreMap.addOnMapClickListener { latLng ->
                             val screen = libreMap.projection.toScreenLocation(latLng)
-                            val hitBox = RectF(screen.x - 24f, screen.y - 24f, screen.x + 24f, screen.y + 24f)
-                            val title = libreMap.queryRenderedFeatures(hitBox, "places-circle")
+                            val hitBox = RectF(screen.x - 40f, screen.y - 60f, screen.x + 40f, screen.y + 10f)
+                            val title = libreMap.queryRenderedFeatures(hitBox, LAYER_PLACES)
                                 .firstOrNull()?.getStringProperty("title")
                             if (title != null) {
                                 currentOnPlaceTap(title)
@@ -351,8 +352,11 @@ private fun OlaMap(
     LaunchedEffect(location, style) {
         val loaded = style ?: return@LaunchedEffect
         val point = location ?: return@LaunchedEffect
-        val me = Feature.fromGeometry(Point.fromLngLat(point.lon, point.lat))
-            .apply { addStringProperty("title", "You") }
+        loaded.addImage("me-bubble", MapMarkers.initialBubble(context, "You", 0xFF1E6FEA.toInt()))
+        val me = Feature.fromGeometry(Point.fromLngLat(point.lon, point.lat)).apply {
+            addStringProperty("icon", "me-bubble")
+            addStringProperty("title", "You")
+        }
         (loaded.getSource(SOURCE_ME) as? GeoJsonSource)?.setGeoJson(FeatureCollection.fromFeatures(listOf(me)))
     }
 
@@ -361,7 +365,14 @@ private fun OlaMap(
         val features = landmarks.mapNotNull { lm ->
             val lat = lm.lat ?: return@mapNotNull null
             val lon = lm.lon ?: return@mapNotNull null
-            Feature.fromGeometry(Point.fromLngLat(lon, lat)).apply { addStringProperty("title", lm.name) }
+            val iconId = "place-${lm.id}"
+            val bubble = MapMarkers.photoBubble(context, lm.imageUrl)
+                ?: MapMarkers.initialBubble(context, lm.name, 0xFF0E7C7B.toInt())
+            loaded.addImage(iconId, bubble)
+            Feature.fromGeometry(Point.fromLngLat(lon, lat)).apply {
+                addStringProperty("icon", iconId)
+                addStringProperty("title", lm.name)
+            }
         }
         (loaded.getSource(SOURCE_PLACES) as? GeoJsonSource)?.setGeoJson(FeatureCollection.fromFeatures(features))
     }
@@ -369,7 +380,12 @@ private fun OlaMap(
     LaunchedEffect(friends, style) {
         val loaded = style ?: return@LaunchedEffect
         val features = friends.map { f ->
-            Feature.fromGeometry(Point.fromLngLat(f.lon, f.lat)).apply { addStringProperty("title", f.name) }
+            val iconId = "friend-${f.uid}"
+            loaded.addImage(iconId, MapMarkers.initialBubble(context, f.name, 0xFFFF6F5E.toInt()))
+            Feature.fromGeometry(Point.fromLngLat(f.lon, f.lat)).apply {
+                addStringProperty("icon", iconId)
+                addStringProperty("title", f.name)
+            }
         }
         (loaded.getSource(SOURCE_FRIENDS) as? GeoJsonSource)?.setGeoJson(FeatureCollection.fromFeatures(features))
     }
@@ -393,76 +409,24 @@ private fun ZoomButton(icon: ImageVector, description: String, onClick: () -> Un
     }
 }
 
-/** Adds empty GeoJSON sources + circle/label layers for landmark and friend pins. */
+private const val LAYER_PLACES = "places-symbol"
+private const val LAYER_FRIENDS = "friends-symbol"
+private const val LAYER_ME = "me-symbol"
+
+/** Adds empty GeoJSON sources + photo-bubble icon layers for places, friends and the user. */
 private fun setupMarkerLayers(style: Style) {
-    val teal = 0xFF0E7C7B.toInt()
-    val coral = 0xFFFF6F5E.toInt()
-    val white = 0xFFFFFFFF.toInt()
-    val dark = 0xFF15201F.toInt()
-
+    fun bubbleLayer(id: String, source: String) = SymbolLayer(id, source).withProperties(
+        PropertyFactory.iconImage(Expression.get("icon")),
+        PropertyFactory.iconSize(0.8f),
+        PropertyFactory.iconAllowOverlap(true),
+        PropertyFactory.iconAnchor(Property.ICON_ANCHOR_BOTTOM),
+    )
     style.addSource(GeoJsonSource(SOURCE_PLACES))
-    style.addLayer(
-        CircleLayer("places-circle", SOURCE_PLACES).withProperties(
-            PropertyFactory.circleColor(teal),
-            PropertyFactory.circleRadius(7f),
-            PropertyFactory.circleStrokeColor(white),
-            PropertyFactory.circleStrokeWidth(2f),
-        ),
-    )
-    style.addLayer(
-        SymbolLayer("places-label", SOURCE_PLACES).withProperties(
-            PropertyFactory.textField(Expression.get("title")),
-            PropertyFactory.textSize(11f),
-            PropertyFactory.textColor(dark),
-            PropertyFactory.textHaloColor(white),
-            PropertyFactory.textHaloWidth(1.2f),
-            PropertyFactory.textOffset(arrayOf(0f, 1.4f)),
-            PropertyFactory.textAllowOverlap(false),
-        ),
-    )
-
+    style.addLayer(bubbleLayer(LAYER_PLACES, SOURCE_PLACES))
     style.addSource(GeoJsonSource(SOURCE_FRIENDS))
-    style.addLayer(
-        CircleLayer("friends-circle", SOURCE_FRIENDS).withProperties(
-            PropertyFactory.circleColor(coral),
-            PropertyFactory.circleRadius(9f),
-            PropertyFactory.circleStrokeColor(white),
-            PropertyFactory.circleStrokeWidth(3f),
-        ),
-    )
-    style.addLayer(
-        SymbolLayer("friends-label", SOURCE_FRIENDS).withProperties(
-            PropertyFactory.textField(Expression.get("title")),
-            PropertyFactory.textSize(11f),
-            PropertyFactory.textColor(coral),
-            PropertyFactory.textHaloColor(white),
-            PropertyFactory.textHaloWidth(1.2f),
-            PropertyFactory.textOffset(arrayOf(0f, -1.6f)),
-            PropertyFactory.textAllowOverlap(true),
-        ),
-    )
-
-    // "You" — the user's own live location.
+    style.addLayer(bubbleLayer(LAYER_FRIENDS, SOURCE_FRIENDS))
     style.addSource(GeoJsonSource(SOURCE_ME))
-    style.addLayer(
-        CircleLayer("me-circle", SOURCE_ME).withProperties(
-            PropertyFactory.circleColor(0xFF1E6FEA.toInt()),
-            PropertyFactory.circleRadius(9f),
-            PropertyFactory.circleStrokeColor(white),
-            PropertyFactory.circleStrokeWidth(4f),
-        ),
-    )
-    style.addLayer(
-        SymbolLayer("me-label", SOURCE_ME).withProperties(
-            PropertyFactory.textField(Expression.get("title")),
-            PropertyFactory.textSize(12f),
-            PropertyFactory.textColor(0xFF1E6FEA.toInt()),
-            PropertyFactory.textHaloColor(white),
-            PropertyFactory.textHaloWidth(1.4f),
-            PropertyFactory.textOffset(arrayOf(0f, -1.6f)),
-            PropertyFactory.textAllowOverlap(true),
-        ),
-    )
+    style.addLayer(bubbleLayer(LAYER_ME, SOURCE_ME))
 }
 
 @Composable
