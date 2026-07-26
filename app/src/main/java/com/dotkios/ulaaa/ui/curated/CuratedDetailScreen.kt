@@ -60,7 +60,7 @@ fun CuratedDetailScreen(
         bottomBar = {
             if (!state.isLoading && state.stops.isNotEmpty()) {
                 AppButton(
-                    text = if (state.isSaving) "Saving…" else "Add to my trips & invite",
+                    text = if (state.isSaving) "Saving…" else "Add to my trips",
                     onClick = viewModel::saveAsTrip,
                     enabled = !state.isSaving,
                     modifier = Modifier.padding(16.dp),
