@@ -10,8 +10,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -28,12 +26,11 @@ import com.dotkios.ulaaa.ui.components.bounceClick
 private val PillDark = Color(0xFF15211E)
 private val PillIconIdle = Color(0xFFB7C4BF)
 
-/** Floating rounded pill nav: icon tabs with a green highlight and a center "+". */
+/** Floating rounded pill nav: icon tabs with a green highlight for the active tab. */
 @Composable
 fun UlaaaBottomBar(
     currentRoute: String?,
     onSelect: (TopLevelDestination) -> Unit,
-    onCreate: () -> Unit,
 ) {
     val tabs = TopLevelDestination.entries
     Box(
@@ -45,7 +42,7 @@ fun UlaaaBottomBar(
                 ),
             )
             .navigationBarsPadding()
-            .padding(start = 28.dp, end = 28.dp, top = 28.dp, bottom = 12.dp),
+            .padding(start = 40.dp, end = 40.dp, top = 28.dp, bottom = 12.dp),
         contentAlignment = Alignment.Center,
     ) {
         Surface(
@@ -53,8 +50,6 @@ fun UlaaaBottomBar(
             color = PillDark,
             shadowElevation = 14.dp,
         ) {
-            // Center "+" splits the tabs into two halves.
-            val mid = tabs.size / 2
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -62,9 +57,7 @@ fun UlaaaBottomBar(
                 horizontalArrangement = Arrangement.spacedBy(2.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                tabs.take(mid).forEach { PillItem(it, currentRoute, onSelect, Modifier.weight(1f)) }
-                CreatePill(onCreate, Modifier.weight(1f))
-                tabs.drop(mid).forEach { PillItem(it, currentRoute, onSelect, Modifier.weight(1f)) }
+                tabs.forEach { PillItem(it, currentRoute, onSelect, Modifier.weight(1f)) }
             }
         }
     }
@@ -92,27 +85,6 @@ private fun PillItem(
                 contentDescription = dest.label,
                 tint = if (selected) MaterialTheme.colorScheme.onPrimary else PillIconIdle,
                 modifier = Modifier.size(23.dp),
-            )
-        }
-    }
-}
-
-@Composable
-private fun CreatePill(onCreate: () -> Unit, modifier: Modifier = Modifier) {
-    Box(modifier = modifier, contentAlignment = Alignment.Center) {
-        Box(
-            modifier = Modifier
-                .size(48.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.secondary)
-                .bounceClick(onCreate),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                Icons.Filled.Add,
-                contentDescription = "Create trip",
-                tint = MaterialTheme.colorScheme.onSecondary,
-                modifier = Modifier.size(25.dp),
             )
         }
     }

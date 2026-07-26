@@ -49,7 +49,6 @@ fun MainShell(onSignOut: () -> Unit) {
             UlaaaBottomBar(
                 currentRoute = currentRoute,
                 onSelect = { dest -> navController.selectTab(dest) },
-                onCreate = { navController.navigate(ROUTE_TRIP_CREATE) },
             )
         },
     ) { innerPadding ->
