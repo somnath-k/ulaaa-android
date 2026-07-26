@@ -1,5 +1,8 @@
 package com.dotkios.ulaaa.ui.home
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -73,10 +76,13 @@ fun HomeScreen(
     onOpenMap: () -> Unit,
     onAskDot: (starterPrompt: String?) -> Unit,
     onOpenCurated: (com.dotkios.ulaaa.data.model.CuratedItinerary) -> Unit,
-    onAddStory: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val storyPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickVisualMedia(),
+    ) { uri -> uri?.let(viewModel::addStory) }
+
     HomeContent(
         state = state,
         onSeeAllTrips = onSeeAllTrips,
@@ -84,7 +90,9 @@ fun HomeScreen(
         onOpenMap = onOpenMap,
         onAskDot = onAskDot,
         onOpenCurated = onOpenCurated,
-        onAddStory = onAddStory,
+        onAddStory = {
+            storyPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+        },
         onToggleLike = viewModel::toggleLike,
     )
 }
