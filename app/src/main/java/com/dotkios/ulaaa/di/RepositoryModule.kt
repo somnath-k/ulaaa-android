@@ -12,10 +12,14 @@ import com.dotkios.ulaaa.data.repository.FriendRepository
 import com.dotkios.ulaaa.data.repository.FriendRepositoryImpl
 import com.dotkios.ulaaa.data.repository.ItineraryRepository
 import com.dotkios.ulaaa.data.repository.ItineraryRepositoryImpl
+import com.dotkios.ulaaa.data.repository.MediaRepository
+import com.dotkios.ulaaa.data.repository.MediaRepositoryImpl
 import com.dotkios.ulaaa.data.repository.PlaceImageRepository
 import com.dotkios.ulaaa.data.repository.PlaceImageRepositoryImpl
 import com.dotkios.ulaaa.data.repository.PlacesRepository
 import com.dotkios.ulaaa.data.repository.PlacesRepositoryImpl
+import com.dotkios.ulaaa.data.repository.PostRepository
+import com.dotkios.ulaaa.data.repository.PostRepositoryImpl
 import com.dotkios.ulaaa.data.repository.RecommendationRepository
 import com.dotkios.ulaaa.data.repository.RecommendationRepositoryImpl
 import com.dotkios.ulaaa.data.repository.TripChatRepository
@@ -87,4 +91,12 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindTripChatRepository(impl: TripChatRepositoryImpl): TripChatRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindMediaRepository(impl: MediaRepositoryImpl): MediaRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindPostRepository(impl: PostRepositoryImpl): PostRepository
 }

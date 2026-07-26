@@ -7,5 +7,7 @@ data class UserProfile(
     val email: String = "",
     /** Normalized phone (digits only, last 10) — used to match contacts to users. */
     val phone: String = "",
+    /** Firebase Storage download URL for the profile picture (empty if none). */
+    val photoUrl: String = "",
     val createdAt: Long = 0L,
 )

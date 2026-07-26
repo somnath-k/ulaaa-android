@@ -11,6 +11,7 @@ interface UserRepository {
     suspend fun createProfile(profile: UserProfile): Result<Unit>
     suspend fun getProfile(uid: String): Result<UserProfile?>
     suspend fun setPhone(uid: String, phone: String): Result<Unit>
+    suspend fun setPhotoUrl(uid: String, photoUrl: String): Result<Unit>
 }
 
 @Singleton
@@ -30,6 +31,10 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun setPhone(uid: String, phone: String): Result<Unit> = runCatching {
         users.document(uid).set(mapOf("phone" to phone), SetOptions.merge()).await()
+    }
+
+    override suspend fun setPhotoUrl(uid: String, photoUrl: String): Result<Unit> = runCatching {
+        users.document(uid).set(mapOf("photoUrl" to photoUrl), SetOptions.merge()).await()
     }
 
     private companion object {
